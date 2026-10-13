@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f6f4">
+  <title>盤勢排名｜台股市場觀察</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="盤勢排名首頁"><span class="brand-mark">T</span><span>盤勢排名<span class="brand-en">MARKET BRIEF</span></span></a>
+      <div class="top-meta"><span class="live-dot"></span><span>台灣證券市場</span><span class="meta-divider"></span><span id="clock">--:--</span></div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy"><div class="eyebrow"><span class="eyebrow-line"></span> DAILY MARKET SCAN</div><h1>看見今天的<br><span>市場焦點。</span></h1><p class="hero-desc">成交量與漲跌幅排名，快速掌握台股盤面動向。</p></div>
+        <div class="hero-aside"><span class="aside-label">報表日期</span><strong id="reportDate">載入中</strong><span class="aside-note" id="sessionBadge">等待資料</span></div>
+      </section>
+
+      <section class="control-panel" aria-label="報表條件">
+        <div class="controls-left">
+          <label class="control-label" for="report-date">日期提示（目前僅顯示最新資料）</label>
+          <div class="date-control"><span class="calendar-icon">▦</span><input id="report-date" type="date"><button id="todayBtn" class="today-btn" type="button">最新交易日</button></div>
+        </div>
+        <div class="controls-right"><span class="control-label">市場範圍</span><div class="segmented" role="group" aria-label="市場範圍"><button class="active" data-market="all">全部市場</button><button data-market="listed">上市</button><button data-market="otc">上櫃</button><button data-market="emerging">興櫃</button></div></div>
+        <button id="refreshBtn" class="refresh-btn" type="button"><span class="refresh-icon">↻</span> 更新資料</button>
+      </section>
+
+      <section class="session-section">
+        <div class="section-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> SESSION VIEW</div><h2>交易時段</h2></div><div class="session-hint" id="sessionHint">以所選日期行情資料為準</div></div>
+        <div class="session-tabs" role="tablist" aria-label="交易時段">
+          <button class="session-tab" role="tab" data-session="pre" aria-selected="false"><span class="tab-number">01</span><span class="tab-name">盤前</span><span class="tab-time">開盤前</span></button>
+          <button class="session-tab" role="tab" data-session="intra" aria-selected="false"><span class="tab-number">02</span><span class="tab-name">盤中</span><span class="tab-time">09:00 — 13:30</span></button>
+          <button class="session-tab selected" role="tab" data-session="post" aria-selected="true"><span class="tab-number">03</span><span class="tab-name">盤後</span><span class="tab-time">收盤結算</span></button>
+        </div>
+        <div class="session-note" id="sessionNote"><span class="note-icon">i</span><span>盤後排名依所選日期的官方日行情計算。</span></div>
+      </section>
+
+      <section class="rank-grid">
+        <article class="rank-card volume-card">
+          <div class="card-head"><div><div class="card-kicker"><span class="card-icon volume-icon">▥</span> MOST TRADED</div><h3>成交量排行</h3></div><span class="unit-chip">張（興櫃股數換算）</span></div>
+          <div class="table-wrap"><table><thead><tr><th>排名</th><th>股票</th><th>成交量</th><th>漲跌幅</th></tr></thead><tbody id="volumeRows"><tr><td colspan="4" class="empty-state">正在讀取行情資料…</td></tr></tbody></table></div>
+          <div class="card-foot"><span>依成交股數排序</span><span id="volumeCount">—</span></div>
+        </article>
+        <article class="rank-card change-card">
+          <div class="card-head"><div><div class="card-kicker"><span class="card-icon change-icon">↗</span> TOP MOVERS</div><h3>漲跌幅排行</h3></div><div class="change-toggle" role="group" aria-label="漲跌排行"><button class="active" data-direction="up">漲幅</button><button data-direction="down">跌幅</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>排名</th><th>股票</th><th>漲跌幅</th><th>成交量</th></tr></thead><tbody id="changeRows"><tr><td colspan="4" class="empty-state">正在讀取行情資料…</td></tr></tbody></table></div>
+          <div class="card-foot"><span><span id="changeFoot">依漲跌幅排序</span><span class="basis-note" id="priceBasisLabel">興櫃漲跌幅以日均價／前日均價計算</span></span><span id="changeCount">—</span></div>
+        </article>
+      </section>
+
+      <section class="data-status" id="statusBox"><span class="status-dot"></span><div><strong id="statusTitle">正在連線至官方資料來源</strong><p id="statusText">資料更新時間將顯示於此。</p></div><button id="retryBtn" type="button">重新載入</button></section>
+      <footer><span>資料來源：TWSE 上市 ・ TPEx 上櫃／興櫃官方公開行情</span><span>市場觀察，僅供資訊參考</span></footer>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
