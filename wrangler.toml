@@ -1,0 +1,7 @@
+name = "stocktracker-yahoo-proxy"
+main = "worker/yahoo-proxy.js"
+compatibility_date = "2025-10-01"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGIN = "https://xiaobai2er.github.io"

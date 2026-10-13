@@ -23,14 +23,14 @@
 
 ## Yahoo Finance 個股價格與漲跌幅
 
-- 上市代碼加 `.TW`、上櫃及興櫃代碼加 `.TWO`，由 Yahoo Finance quote API 取最新可用價格、前收、漲跌額、漲跌幅與行情時間。官方成交量與期貨排行仍採原有 TWSE、TPEx、TAIFEX 日行情資料。
+- 上市代碼加 `.TW`、上櫃及興櫃代碼加 `.TWO`，由 Yahoo Finance Spark chart API 取最新可用價格、前收、漲跌額、漲跌幅與行情時間。官方成交量與期貨排行仍採原有 TWSE、TPEx、TAIFEX 日行情資料。
 - Yahoo 官方交易所資料表列出台灣 TWSE（`.TW`）及 Taiwan OTC（`.TWO`）報價延遲 20 分鐘。興櫃亦以 `.TWO` 試取；是否有報價取決於 Yahoo 個別代碼收錄。取得 Yahoo 報價時以 Yahoo 價格和漲跌幅排序；缺漏時保留並標示官方最新收盤價／興櫃日均價與官方漲跌幅，故報價不完整時排行會混用來源。[Yahoo 交易所與資料延遲表](https://help.yahoo.com/kb/finance/article-exchanges-data-delays-sln2310.html)
-- Yahoo 未提供穩定公開開發者 API 或服務保證；目前使用 Yahoo Finance 網站使用的 quote 介面，cookie、crumb、欄位或限流政策變動都可能令價格快照暫時失敗。這時官方成交量、期貨排行仍可使用。報價不代表即時行情，也不適合作為下單依據。
-- Actions 約每 15 分鐘更新靜態快照；若部署自有 Cloudflare Worker，頁面每 60 秒可向 Worker 檢查最新 Yahoo 價格。Yahoo 資料本身約延遲 20 分鐘，因此 60 秒是頁面檢查頻率，不是即時行情或上游更新承諾。
-- 此 repo 的 GitHub Actions runner 目前直連 Yahoo v7 quote 得到 HTTP 406；未設定自有 Worker 時，快照仍會發布官方行情，但 Yahoo 價格可能為零筆。頁面會明確顯示此狀態並回退顯示官方日行情。自有 Worker 的 v7 cookie/crumb 流程尚需在使用者 Cloudflare 帳戶部署後確認可否取得報價。
+- Yahoo 未提供穩定公開開發者 API 或服務保證；Spark 是 Yahoo Finance 網站使用的未正式承諾介面，欄位、限流或可用性可能改變。報價不代表即時行情，也不適合作為下單依據。
+- Actions 約每 15 分鐘更新官方靜態快照；頁面每 60 秒向 Worker 輪詢全市場 Yahoo 代碼。Yahoo 交易所資料約延遲 20 分鐘，因此頁面輪詢頻率不是即時行情或上游更新承諾。Worker 每次接收最多 100 個代碼，再以每次 20 個代碼呼叫 Spark（最多 5 個上游請求）；回應快取 120 秒。頁面依序更新全部股票分批，某一輪可能需要數十秒。
+- GitHub Actions runner 直接呼叫 Yahoo v7 quote 曾回 HTTP 406，所以靜態 snapshot 的 Yahoo 價格可能為零筆；官方日行情與期貨仍會正常發布。頁面會顯示 Yahoo 報價狀態，缺漏個股回退顯示官方日行情。
 
 ### Cloudflare Worker
 
-Yahoo quote proxy 已暫時部署在 `https://stocktracker-yahoo-proxy.romantic-honey.workers.dev/quotes`，並設好 `ALLOWED_ORIGIN=https://xiaobai2er.github.io`。網站管理者已提供 Cloudflare claim link，請在連結有效期限內（60 分鐘）認領部署。前端 `config.js` 已指向此 Worker；瀏覽器請求由允許的 Pages origin 放行，不使用或暴露 `PROXY_TOKEN`。
+Worker 原始碼位於 `worker/yahoo-proxy.js`，部署設定位於 `wrangler.toml`。登入已授權的 Cloudflare 帳戶後，執行 `npx wrangler deploy` 發佈；設定將限制瀏覽器請求來源為 `https://xiaobai2er.github.io`。前端 `config.js` 必須指向部署後顯示的 `/quotes` URL。此 Worker 不需要 `PROXY_TOKEN`，因為前端程式無法保密 token，並以 Pages origin 限制跨來源讀取。
 
-頁面每 60 秒以最多 100 個代碼一批向 Worker 更新 Yahoo 報價；Actions 靜態快照仍會保存官方日行情，Yahoo 直連目前若回 HTTP 406，則快照中的 Yahoo 報價為空並由官方日價回退。認領後若 Worker URL 改變，請更新 `config.js` 的 `window.STOCKTRACKER_YAHOO_WORKER_URL` 並重新部署 Pages。Worker 原始碼仍在 `worker/yahoo-proxy.js`；如需改用自己的 Worker，請部署該檔並設定允許的 Pages origin。
+Worker 使用 Yahoo `v8/finance/spark` 批次介面，避開 cookie/crumb 的 v7 quote 流程。Spark 每次最多接受 20 個股票代碼，Worker 每次最多處理 100 檔並串行呼叫最多 5 次上游 API，符合 Cloudflare Workers 免費方案每次請求的 subrequest 限額。單一無報價代碼會由 Yahoo 省略；各批次錯誤不會阻斷其他批次。Worker 對每個代碼批次快取 120 秒，頁面輪詢及實際 Yahoo 報價更新頻率仍須分開理解。
