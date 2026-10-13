@@ -15,6 +15,7 @@ SOURCES = {
     "listedCompanies": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
     "otcCompanies": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O",
 }
+FUTURES_SOURCE = "https://openapi.taifex.com.tw/v1/DailyMarketReportFut"
 
 
 def get_json(url: str) -> list:
@@ -53,6 +54,13 @@ def main() -> None:
         "otc": source_data["otc"],
         "emerging": source_data["emerging"],
     }
+    snapshot["futures"] = []
+    snapshot["futuresError"] = None
+    try:
+        snapshot["futures"] = get_json(FUTURES_SOURCE)
+    except Exception as error:
+        snapshot["futuresError"] = str(error)
+        print(f"Warning: futures endpoint unavailable; keeping stock snapshot: {error}", flush=True)
     snapshot["fetchedAt"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

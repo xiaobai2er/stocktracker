@@ -81,6 +81,15 @@
           </div>
         </section>
 
+        <section class="futures-section">
+          <div class="section-title-row futures-heading"><div><p class="overline"><span></span> FUTURES MARKET</p><h2>期貨商品成交量</h2></div><div class="futures-heading-meta"><span class="futures-source-badge">TAIFEX 官方每日行情</span><span class="futures-date-label">資料日 <strong id="futuresDate">—</strong></span></div></div>
+          <article class="rank-card futures-card">
+            <div class="rank-card-head"><div class="rank-title-group"><span class="rank-icon futures-icon">◈</span><div><h3>期貨成交口數排行</h3><p>按商品代碼合併各到期月份與日盤、盤後成交量</p></div></div><span class="futures-frequency">每日行情・非逐筆即時</span></div>
+            <div class="table-wrap"><table><thead><tr><th class="rank-col">#</th><th>期貨商品</th><th>代碼</th><th class="numeric">成交口數</th></tr></thead><tbody id="futuresRows"><tr><td colspan="4" class="empty-state">等待載入期交所每日行情…</td></tr></tbody></table></div>
+            <div class="card-foot"><span id="futuresMessage">資料依 Contract 彙總，同一資料日的各到期月與 TradingSession 數值會相加。此為每日行情，非逐筆即時。</span><span id="futuresCount">—</span></div>
+          </article>
+        </section>
+
         <section class="data-status" id="statusBox"><span class="status-indicator"></span><div class="status-copy"><strong id="statusTitle">連線官方資料</strong><p id="statusText">等待讀取最新市場資料快照。</p></div><button id="retryBtn" type="button">重新載入</button></section>
         <footer class="page-footer"><span>資料來源：TWSE 上市 ・ TPEx 上櫃／興櫃官方公開行情</span><span>市場觀察，僅供資訊參考</span></footer>
       </div>

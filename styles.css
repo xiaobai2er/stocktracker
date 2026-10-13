@@ -58,3 +58,34 @@ th{font-size:10px;height:37px}td{font-size:11px;height:44px;line-height:1.5}.ran
   .card-foot{font-size:8px}.basis-subnote{font-size:8px}.empty-state{font-size:11px!important}.status-copy strong,.status-copy p{font-size:9px}.data-status button{font-size:9px}.page-footer{font-size:8px}
 }
 @media(max-width:390px){.summary-grid{grid-template-columns:1fr 1fr}.summary-card:first-child{grid-column:1/-1}.summary-foot{font-size:9px}.session-tab small{display:none}.heading-note{max-width:44%}.page-heading h1{font-size:23px}.topbar-right{gap:5px}.refresh-button{padding:0 6px}.table-wrap table{min-width:450px}}
+
+/* Second readability increase requested: +4pt (about 5.33 CSS px). */
+body{font-size:19.33px;line-height:1.55}
+.brand-copy strong{font-size:16.33px}.brand-copy small{font-size:16.33px}
+.sidebar-section-label{font-size:16.33px}.sidebar-section-label span{font-size:14.33px}
+.market-link{font-size:17.33px}.nav-glyph{font-size:15.33px}.nav-glyph.all-glyph{font-size:17.33px}.nav-count{font-size:15.33px}
+.sidebar-date label,.sidebar-date>button{font-size:16.33px}.date-input-wrap input{font-size:16.33px}
+.market-clock{font-size:15.33px}.market-clock strong{font-size:16.33px}.sidebar-source strong{font-size:16.33px}.sidebar-source small{font-size:14.33px}.sidebar-version{font-size:14.33px}
+.breadcrumb{font-size:16.33px}.snapshot-status,.top-date-label,.session-badge{font-size:15.33px}.top-date{font-size:16.33px}.refresh-button{font-size:15.33px}
+h1{font-size:33.33px;line-height:1.35}.page-subtitle{font-size:18.33px;line-height:1.55}.overline{font-size:14.33px}.heading-note{font-size:16.33px;line-height:1.65}
+.session-panel-title>span{font-size:16.33px}.session-panel-title small{font-size:14.33px}.session-tab b{font-size:16.33px}.session-tab small{font-size:14.33px}
+.summary-top{font-size:15.33px}.summary-value{font-size:30.33px;line-height:1.25}.summary-stock{font-size:22.33px;line-height:1.45}.summary-foot{font-size:14.33px;line-height:1.5}.summary-foot strong{font-size:15.33px}
+.section-title-row h2{font-size:23.33px;line-height:1.4}.scope-caption{font-size:15.33px}
+.rank-title-group h3{font-size:18.33px;line-height:1.4}.rank-title-group p{font-size:15.33px;line-height:1.45}.unit-chip{font-size:14.33px;line-height:1.45}.direction-toggle button{font-size:15.33px}
+th{font-size:15.33px;height:43px}td{font-size:16.33px;height:51px;line-height:1.5}.rank-num,.stock-code,.volume-value,.pct{font-size:15.33px}.stock-name{font-size:16.33px}.stock-market-tag{font-size:14.33px}.mini-bar{width:38px}
+.card-foot{font-size:14.33px;line-height:1.5;min-height:46px}.basis-subnote{font-size:13.33px;line-height:1.5}.empty-state{font-size:16.33px!important;line-height:1.6}
+.status-copy strong{font-size:15.33px}.status-copy p{font-size:15.33px;line-height:1.6}.data-status button{font-size:15.33px}.page-footer{font-size:14.33px;line-height:1.5}
+@media(max-width:650px){
+  .brand-copy strong{font-size:15.33px}.brand-copy small{font-size:14.33px}
+  .market-link{font-size:16.33px}.nav-glyph{font-size:13.33px}.market-link.active .nav-glyph{font-size:13.33px}.nav-count{font-size:13.33px}
+  .breadcrumb{font-size:15.33px}.top-date{font-size:15.33px}.session-badge{font-size:14.33px}.refresh-button{font-size:14.33px}
+  .page-heading h1{font-size:30.33px}.page-subtitle{font-size:16.33px}.heading-note{font-size:15.33px;line-height:1.55}
+  .session-panel-title>span{font-size:15.33px}.session-panel-title small{font-size:14.33px}.session-tab b{font-size:15.33px}.session-tab small{font-size:13.33px}
+  .summary-top{font-size:14.33px}.summary-value{font-size:26.33px}.summary-stock{font-size:19.33px}.summary-foot{font-size:13.33px}.summary-foot strong,.summary-foot .pct{font-size:14.33px}
+  .section-title-row h2{font-size:21.33px}.scope-caption{font-size:14.33px}.rank-title-group h3{font-size:17.33px}.rank-title-group p{font-size:14.33px}.unit-chip{font-size:13.33px}.direction-toggle button{font-size:14.33px}
+  th{font-size:15.33px;height:43px}td{font-size:16.33px;height:51px}.rank-num,.stock-code,.volume-value,.pct{font-size:14.33px}.stock-name{font-size:16.33px}.stock-market-tag{font-size:13.33px}.table-wrap table{min-width:530px}
+  .card-foot{font-size:13.33px;min-height:44px}.basis-subnote{font-size:12.33px}.empty-state{font-size:16.33px!important}.status-copy strong,.status-copy p{font-size:14.33px}.data-status button{font-size:14.33px}.page-footer{font-size:13.33px}
+}
+@media(max-width:390px){.summary-foot{font-size:14.33px}.session-tab small{display:none}.page-heading h1{font-size:28.33px}.topbar-right{gap:5px}.refresh-button{padding:0 6px}.table-wrap table{min-width:530px}}
+.futures-section{margin:27px 0 0}.futures-heading{margin-bottom:11px}.futures-heading-meta{display:flex;align-items:center;gap:10px}.futures-source-badge{padding:5px 8px;background:#e8f5f1;border:1px solid #dceee7;border-radius:4px;color:#377f6c;font:14px 'Noto Sans TC',sans-serif}.futures-date-label{color:#8b9992;font:14px 'Noto Sans TC',sans-serif}.futures-date-label strong{margin-left:4px;color:#42574d;font:14px 'DM Mono',monospace}.futures-icon{background:#e9f1f8;color:#6489aa}.futures-frequency{padding:5px 8px;border:1px solid #e7ece9;border-radius:4px;color:#73847b;background:#fafcfb;font:13px 'Noto Sans TC',sans-serif}.futures-code{color:#6f8178;font:14px 'DM Mono',monospace;background:#f3f6f4;padding:3px 6px;border-radius:4px}.futures-card .table-wrap table{min-width:500px}
+@media(max-width:650px){.futures-heading-meta{gap:6px;flex-wrap:wrap;justify-content:flex-end}.futures-source-badge,.futures-date-label,.futures-date-label strong{font-size:13px}.futures-frequency{font-size:12px}.futures-code{font-size:14px}.futures-card .table-wrap table{min-width:530px}.futures-card .rank-card-head{align-items:flex-start;flex-wrap:wrap}.futures-frequency{margin-left:auto}}

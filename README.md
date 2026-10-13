@@ -1,6 +1,6 @@
 # 台股盤勢排名
 
-這是無 build step 的靜態網站。頁面提供台灣上市、上櫃及興櫃市場的成交量與漲跌幅前五名，可切換市場、漲幅／跌幅與盤前／盤中／盤後說明。
+這是無 build step 的靜態網站。頁面提供台灣上市、上櫃及興櫃市場的成交量與漲跌幅前五名，以及獨立期貨商品成交口數排行，可切換股票市場、漲幅／跌幅與盤前／盤中／盤後說明。
 
 ## 資料來源與計算
 
@@ -9,6 +9,7 @@
 - 興櫃 TPEx：[`tpex_esb_latest_statistics`](https://www.tpex.org.tw/openapi/v1/tpex_esb_latest_statistics)，使用 `Date`、`SecuritiesCompanyCode`、`CompanyName`、`PreviousAveragePrice`、`Average`、`TransactionVolume`。興櫃是議價交易，漲跌幅按「日均價相對前日均價」計算；日均價缺值或前日均價為零時不列入漲跌幅排行。成交量統一以股數除以 1,000 換算成張數呈現。
 - 上市／上櫃日行情會分別以 TWSE `t187ap03_L`、TPEx `mopsfin_t187ap03_O` 官方公司名單篩選代碼，排除 ETF、權證等非公司股票標的；興櫃來源為專屬興櫃股票行情端點。公司代碼清單和行情快照都在每次資料抓取時更新。
 - 以上是官方最新日行情快照，不是逐筆或即時報價。若三個市場都有共同資料日，跨市場排名使用最新共同日；否則各市場使用自己的最新日期，並分別標示資料日，跨市場排名不代表同一交易日比較。歷史日期回查目前未支援。
+- 期貨使用期交所 [`DailyMarketReportFut`](https://openapi.taifex.com.tw/v1/DailyMarketReportFut) 每日行情，按 `Contract` 加總最新資料日的所有 `ContractMonth(Week)` 與 `TradingSession` `Volume`（含一般及盤後時段），另列前五商品，不併入股票排名。此資料不是逐筆即時行情。若期貨端點抓取失敗，快照會保留錯誤欄位及空期貨清單，股票資料仍會部署並正常呈現。
 
 ## GitHub Pages
 

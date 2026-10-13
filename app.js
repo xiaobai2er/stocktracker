@@ -1,5 +1,5 @@
 const $ = (s) => document.querySelector(s);
-const state = { rows: [], sourceRows: { listed: [], otc: [], emerging: [] }, dates: { listed: [], otc: [], emerging: [] }, market: 'all', direction: 'up', session: 'post', stamp: null, commonDate: false };
+const state = { rows: [], sourceRows: { listed: [], otc: [], emerging: [] }, dates: { listed: [], otc: [], emerging: [] }, futures: [], futuresError: null, market: 'all', direction: 'up', session: 'post', stamp: null, commonDate: false };
 const fmt = new Intl.NumberFormat('zh-TW');
 
 function taipeiNow(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Taipei'})); }
@@ -46,6 +46,8 @@ async function loadData(){
   try{
     const snapshot=await fetchJson('./data/market.json');
     const {listed:twse,otc:tpex,emerging}=snapshot;
+    state.futures=Array.isArray(snapshot.futures)?snapshot.futures:[];
+    state.futuresError=snapshot.futuresError||null;
     const twseRows=(Array.isArray(twse)?twse:[]).map(normalizeTwse).filter(Boolean);
     const tpexRows=(Array.isArray(tpex)?tpex:[]).map(normalizeTpex).filter(Boolean);
     const emergingRows=(Array.isArray(emerging)?emerging:[]).map(normalizeEmerging).filter(Boolean);
@@ -64,7 +66,7 @@ async function loadData(){
     const fetchedAt=snapshot.fetchedAt?new Date(snapshot.fetchedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',month:'2-digit',day:'2-digit',hour12:false}):'—';
     setStatus('官方資料快照已載入',`${dateNotice} ・ 上市 ${twseRows.length.toLocaleString()} 檔、上櫃 ${tpexRows.length.toLocaleString()} 檔、興櫃 ${emergingRows.length.toLocaleString()} 檔 ・ 抓取時間 ${fetchedAt}（台北；由 GitHub Actions 定期更新）`);
   }catch(err){
-    console.error(err); state.rows=[]; render(); $('#reportDate').textContent='暫無資料'; $('#sessionBadge').textContent='連線失敗';
+    console.error(err); state.rows=[];state.futures=[];state.futuresError=err.message; render(); $('#reportDate').textContent='暫無資料'; $('#sessionBadge').textContent='連線失敗';
     setStatus('無法取得官方日行情',`${err.message}。請確認網路或稍後重試；若以 file:// 開啟時瀏覽器阻擋跨來源請求，請在本機啟動簡易 HTTP 伺服器。`,true);
   }finally{document.body.classList.remove('loading');$('#refreshBtn').disabled=false;}
 }
@@ -97,12 +99,37 @@ function render(){
   $('#summaryMoverName').textContent=gainLeader?gainLeader.name:'—';
   $('#summaryMoverCode').textContent=gainLeader?`${gainLeader.code} ・ ${{listed:'上市',otc:'上櫃',emerging:'興櫃'}[gainLeader.market]}`:'目前沒有有效漲跌幅';
   $('#summaryMoverValue').innerHTML=gainLeader?pct(gainLeader.pct):'—';
+  renderFutures();
   $('#volumeRows').innerHTML=vols.length?vols.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td><td>${pct(x.pct)}</td></tr>`).join(''):empty();
   const max=Math.max(1,...movers.map(x=>Math.abs(x.pct)));
   $('#changeRows').innerHTML=movers.length?movers.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td><div class="bar-cell"><span class="mini-bar"><i style="width:${Math.max(5,Math.abs(x.pct)/max*100)}%"></i></span>${pct(x.pct)}</div></td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td></tr>`).join(''):empty();
   $('#volumeCount').textContent=vols.length?`${vols.length} 檔`:'—';$('#changeCount').textContent=movers.length?`${movers.length} 檔`:'—';
   $('#changeFoot').textContent=state.direction==='up'?'依漲幅由高至低':'依跌幅由深至淺';
   $('#priceBasisLabel').textContent=state.market==='all'?'跨市場漲跌幅：上市／上櫃依收盤價；興櫃依日均價':state.market==='emerging'?'興櫃漲跌幅以日均價／前日均價計算':`${state.market==='listed'?'上市':'上櫃'}漲跌幅依收盤價計算`;
+}
+const futuresNames={TX:'臺股期貨',MTX:'小型臺指期貨',TMF:'微型臺指期貨',MX1:'小型臺指W1',MX2:'小型臺指W2',MX4:'小型臺指W4',MX5:'小型臺指W5',TE:'電子期貨',ZEF:'小型電子期貨',TF:'金融期貨',ZFF:'小型金融期貨',GTF:'櫃買期貨',G2F:'富櫃200期貨',E4F:'臺灣永續期貨',BTF:'臺灣生技期貨',SOF:'半導體30期貨',SHF:'航運期貨',M1F:'臺灣中型100期貨',XIF:'非金電期貨',TJF:'東證期貨',UDF:'美國道瓊期貨',SPF:'美國標普500期貨',UNF:'美國那斯達克100期貨',SXF:'美國費城半導體期貨',F1F:'英國富時100期貨',GDF:'黃金期貨',TGF:'臺幣黃金期貨',BRF:'布蘭特原油期貨',RHF:'美元兌人民幣期貨',RTF:'美元兌離岸人民幣期貨',XEF:'歐元兌美元期貨',XJF:'美元兌日圓期貨',XAF:'澳幣兌美元期貨',XBF:'英鎊兌美元期貨'};
+function renderFutures(){
+  const rows=Array.isArray(state.futures)?state.futures:[];
+  const latest=[...new Set(rows.map(x=>dateKey(x.Date)).filter(Boolean))].sort().at(-1)||'';
+  $('#futuresDate').textContent=formatDate(latest);
+  if(state.futuresError){
+    $('#futuresRows').innerHTML='<tr><td colspan="4" class="empty-state">期貨每日行情暫時無法取得；股票排行仍可正常使用。</td></tr>';
+    $('#futuresMessage').textContent='本次期交所期貨資料抓取失敗；股票排行榜不受影響。';
+    $('#futuresCount').textContent='資料暫缺';
+    return;
+  }
+  const byContract=new Map();
+  for(const row of rows){
+    if(dateKey(row.Date)!==latest) continue;
+    const contract=clean(row.Contract);const volume=num(row.Volume);
+    if(!contract||volume===null) continue;
+    const item=byContract.get(contract)||{contract,volume:0};
+    item.volume+=volume;byContract.set(contract,item);
+  }
+  const ranked=[...byContract.values()].sort((a,b)=>b.volume-a.volume).slice(0,5);
+  $('#futuresRows').innerHTML=ranked.length?ranked.map((item,index)=>`<tr><td><span class="rank-num ${index<3?'top-three':''}">${String(index+1).padStart(2,'0')}</span></td><td><span class="stock-name">${escapeHtml(futuresNames[item.contract]||item.contract)}</span></td><td><code class="futures-code">${escapeHtml(item.contract)}</code></td><td class="numeric"><span class="volume-value">${fmt.format(item.volume)}</span></td></tr>`).join(''):'<tr><td colspan="4" class="empty-state">目前沒有可用的期貨每日行情資料。</td></tr>';
+  $('#futuresCount').textContent=ranked.length?`${ranked.length} 項商品`:'—';
+  $('#futuresMessage').textContent='按 Contract 加總同一資料日的所有到期月份與 TradingSession（含一般及盤後）成交量。官方每日行情，非逐筆即時。';
 }
 function stock(x){const marketLabel={listed:'上市',otc:'上櫃',emerging:'興櫃'}[x.market]||'';return `<span class="stock-code">${escapeHtml(x.code)}</span><span class="stock-name">${escapeHtml(x.name)}</span><span class="stock-market-tag">${marketLabel}</span>`;}
 function pct(v){if(v===null||!Number.isFinite(v))return '<span class="pct flat">—</span>';const cls=v>0?'up':v<0?'down':'flat';return `<span class="pct ${cls}">${v>0?'+':''}${Number(v).toFixed(2)}%</span>`;}
