@@ -104,3 +104,8 @@ body{background:#090711;color:#f6f1ff}
 .scope-caption{color:#c3b9d3}.scope-dot{background:#2ee9ff}.rank-icon{background:#211738;color:#2ee9ff}.movers-icon{color:#ff4ea3}.unit-chip{background:#211738;border-color:#47335f;color:#c3b9d3}.direction-toggle{background:#211738;border-color:#47335f}.direction-toggle button{color:#b8adcb}.direction-toggle button.active{background:#8b5cf6;color:#fff}
 .data-status{background:#151126}.status-indicator{background:#38f29a;box-shadow:0 0 0 3px #38f29a20}.status-copy strong{color:#2ee9ff}.status-copy p{color:#b8adcb}.data-status button{color:#2ee9ff}.data-status.error{background:#211126;border-color:#6d283d}.data-status.error .status-indicator{background:#ff385c;box-shadow:0 0 0 3px #ff385c22}
 .price-source{display:block;margin-top:2px;font-size:14.33px;line-height:1.4}.yahoo-source{color:#2ee9ff}.official-source{color:#ff4ea3}
+
+/* Contrast refinements for pale surfaces and table body text. */
+.session-icon{color:#416b5f}
+.stock-market-tag{color:#3e5148}
+td{color:#ddd5ed}
