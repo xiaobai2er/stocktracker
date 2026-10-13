@@ -86,6 +86,17 @@ function render(){
   }
   const vols=[...rows].sort((a,b)=>b.volume-a.volume).slice(0,5);
   const movers=[...rows].filter(x=>x.pct!==null&&Number.isFinite(x.pct)).sort((a,b)=>state.direction==='up'?b.pct-a.pct:a.pct-b.pct).slice(0,5);
+  const scopeName={all:'全部市場',listed:'上市',otc:'上櫃',emerging:'興櫃'}[state.market];
+  $('#summaryUniverse').textContent=fmt.format(rows.length);
+  $('#summaryScope').textContent=scopeName;$('#scopeCaption').textContent=scopeName;
+  const volumeLeader=[...rows].sort((a,b)=>b.volume-a.volume)[0];
+  const gainLeader=[...rows].filter(x=>x.pct!==null&&Number.isFinite(x.pct)).sort((a,b)=>b.pct-a.pct)[0];
+  $('#summaryVolumeName').textContent=volumeLeader?volumeLeader.name:'—';
+  $('#summaryVolumeCode').textContent=volumeLeader?`${volumeLeader.code} ・ ${{listed:'上市',otc:'上櫃',emerging:'興櫃'}[volumeLeader.market]}`:'目前沒有有效行情';
+  $('#summaryVolumeValue').textContent=volumeLeader?fmt.format(Math.round(volumeLeader.volume))+' 張':'—';
+  $('#summaryMoverName').textContent=gainLeader?gainLeader.name:'—';
+  $('#summaryMoverCode').textContent=gainLeader?`${gainLeader.code} ・ ${{listed:'上市',otc:'上櫃',emerging:'興櫃'}[gainLeader.market]}`:'目前沒有有效漲跌幅';
+  $('#summaryMoverValue').innerHTML=gainLeader?pct(gainLeader.pct):'—';
   $('#volumeRows').innerHTML=vols.length?vols.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td><td>${pct(x.pct)}</td></tr>`).join(''):empty();
   const max=Math.max(1,...movers.map(x=>Math.abs(x.pct)));
   $('#changeRows').innerHTML=movers.length?movers.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td><div class="bar-cell"><span class="mini-bar"><i style="width:${Math.max(5,Math.abs(x.pct)/max*100)}%"></i></span>${pct(x.pct)}</div></td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td></tr>`).join(''):empty();
@@ -98,7 +109,7 @@ function pct(v){if(v===null||!Number.isFinite(v))return '<span class="pct flat">
 function empty(){return '<tr><td colspan="4" class="empty-state">目前沒有可用排名資料</td></tr>';}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function sessionCopy(){
-  const copy={pre:['盤前顯示官方最新可取得的已完成交易日行情，供開盤前參考。','盤前參考：不代表今日盤前委託或預估撮合；各市場日期若不同，請依各市場資料日解讀。興櫃漲跌幅按日均價計算。'],intra:['盤中顯示官方最新可取得的日行情快照；資料可能延遲或尚未更新，並非即時行情。','盤中限制：本報表不提供逐筆或即時報價；跨市場日期可能不同。興櫃價格以日均價計算漲跌幅。'],post:['盤後以官方最新可取得日行情計算成交量及漲跌幅排名。','盤後說明：歷史日期回查尚未支援；來源交易日不同時會分別標示各市場資料日。興櫃漲跌幅採日均價相對前日均價。']}[state.session];$('#sessionHint').textContent=copy[0];$('#sessionNote').lastElementChild.textContent=copy[1];
+  const copy={pre:['盤前顯示官方最新可取得的已完成交易日行情，供開盤前參考。','不代表今日盤前委託或預估撮合；各市場日期若不同，請依各市場資料日解讀。興櫃漲跌幅按日均價計算。'],intra:['盤中顯示官方最新可取得的日行情快照，可能延遲或尚未更新，並非即時行情。','本報表不提供逐筆報價；跨市場日期可能不同。興櫃價格以日均價計算漲跌幅。'],post:['盤後以官方最新可取得日行情計算成交量及漲跌幅排名。','目前未支援歷史日期回查；來源交易日不同時會分別標示各市場資料日。興櫃漲跌幅採日均價相對前日均價。']}[state.session];$('#sessionHint').textContent=`${copy[0]} ${copy[1]}`;
 }
 document.querySelectorAll('.session-tab').forEach(b=>b.addEventListener('click',()=>{state.session=b.dataset.session;document.querySelectorAll('.session-tab').forEach(t=>{t.classList.toggle('selected',t===b);t.setAttribute('aria-selected',t===b?'true':'false');});sessionCopy();}));
 document.querySelectorAll('[data-market]').forEach(b=>b.addEventListener('click',()=>{state.market=b.dataset.market;document.querySelectorAll('[data-market]').forEach(x=>x.classList.toggle('active',x===b));render();}));
