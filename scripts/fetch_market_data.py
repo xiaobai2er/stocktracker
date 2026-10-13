@@ -22,6 +22,8 @@ FUTURES_SOURCE = "https://openapi.taifex.com.tw/v1/DailyMarketReportFut"
 YAHOO_CRUMB_SOURCE = "https://query1.finance.yahoo.com/v1/test/getcrumb"
 YAHOO_QUOTE_SOURCE = "https://query1.finance.yahoo.com/v7/finance/quote"
 YAHOO_BATCH_SIZE = 100
+YAHOO_BATCH_TIMEOUT_SECONDS = 12
+YAHOO_TOTAL_TIMEOUT_SECONDS = 90
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130 Safari/537.36"
 
 
@@ -49,12 +51,12 @@ def get_json(url: str) -> list:
     raise RuntimeError(f"Could not fetch {url}")
 
 
-def yahoo_request_json(opener, url: str, token: str = "") -> dict:
+def yahoo_request_json(opener, url: str, token: str = "", timeout: float = YAHOO_BATCH_TIMEOUT_SECONDS) -> dict:
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     request = Request(url, headers=headers)
-    with opener.open(request, timeout=30) as response:
+    with opener.open(request, timeout=timeout) as response:
         payload = json.loads(response.read())
     if not isinstance(payload, dict):
         raise ValueError("Expected a Yahoo quote JSON object")
@@ -78,6 +80,7 @@ def fetch_yahoo_quotes(symbols: list[str]) -> tuple[dict, str]:
     """Fetch Yahoo delayed quotes in batches. A configured Worker URL is optional."""
     proxy_url = os.environ.get("YAHOO_PROXY_URL", "").strip()
     proxy_token = os.environ.get("YAHOO_PROXY_TOKEN", "").strip()
+    deadline = time.monotonic() + YAHOO_TOTAL_TIMEOUT_SECONDS
     quote_map = {}
     errors = []
 
@@ -90,23 +93,27 @@ def fetch_yahoo_quotes(symbols: list[str]) -> tuple[dict, str]:
         headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
         # Yahoo currently issues the cookie/crumb pair used by its quote endpoint.
         try:
-            opener.open(Request("https://fc.yahoo.com", headers=headers), timeout=20).read()
+            opener.open(Request("https://fc.yahoo.com", headers=headers), timeout=5).read()
         except Exception:
             # fc.yahoo.com commonly responds with HTTP 404 while setting cookies.
             pass
-        with opener.open(Request(YAHOO_CRUMB_SOURCE, headers=headers), timeout=20) as response:
+        with opener.open(Request(YAHOO_CRUMB_SOURCE, headers=headers), timeout=10) as response:
             crumb = response.read().decode("utf-8").strip()
         if not crumb:
             return {}, "Yahoo Finance did not provide an API crumb"
 
     for start in range(0, len(symbols), YAHOO_BATCH_SIZE):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            errors.append(f"Yahoo quote fetch exceeded {YAHOO_TOTAL_TIMEOUT_SECONDS} seconds")
+            break
         batch = symbols[start : start + YAHOO_BATCH_SIZE]
         if proxy_url:
             url = add_query(proxy_url.rstrip("/"), {"symbols": ",".join(batch)})
         else:
             url = add_query(YAHOO_QUOTE_SOURCE, {"symbols": ",".join(batch), "crumb": crumb})
         try:
-            payload = yahoo_request_json(opener, url, proxy_token)
+            payload = yahoo_request_json(opener, url, proxy_token, min(YAHOO_BATCH_TIMEOUT_SECONDS, remaining))
             rows = extract_quote_rows(payload)
             if not rows and payload.get("quoteResponse", {}).get("error"):
                 raise RuntimeError(str(payload["quoteResponse"]["error"]))
@@ -130,8 +137,9 @@ def fetch_yahoo_quotes(symbols: list[str]) -> tuple[dict, str]:
         except Exception as error:
             errors.append(f"batch {start // YAHOO_BATCH_SIZE + 1}: {error}")
             print(f"Warning: Yahoo quote batch failed ({start + 1}-{start + len(batch)}): {error}", flush=True)
-        if start + YAHOO_BATCH_SIZE < len(symbols):
-            time.sleep(0.25)
+            # A failing Yahoo batch usually signals blocked access (401/406), bad credentials,
+            # or a transport outage. Continuing hundreds of symbols would just delay deployment.
+            break
 
     return quote_map, "; ".join(errors)
 
