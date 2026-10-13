@@ -1,6 +1,7 @@
 const $ = (s) => document.querySelector(s);
-const state = { rows: [], sourceRows: { listed: [], otc: [], emerging: [] }, dates: { listed: [], otc: [], emerging: [] }, futures: [], futuresError: null, market: 'all', direction: 'up', session: 'post', stamp: null, commonDate: false };
+const state = { rows: [], sourceRows: { listed: [], otc: [], emerging: [] }, dates: { listed: [], otc: [], emerging: [] }, futures: [], futuresError: null, market: 'all', direction: 'up', session: 'post', stamp: null, commonDate: false, fetchedAt: null, lastSuccessAt: null };
 const fmt = new Intl.NumberFormat('zh-TW');
+let loadPromise = null;
 
 function taipeiNow(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Taipei'})); }
 function dateStamp(d){ return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`; }
@@ -41,36 +42,53 @@ function normalizeEmerging(x){
 async function fetchJson(url){
   const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json();
 }
-async function loadData(){
-  document.body.classList.add('loading'); $('#refreshBtn').disabled=true; setStatus('正在連線至官方資料來源','讀取 TWSE、TPEx 上櫃及 TPEx 興櫃最新日行情…');
+function taipeiTime(value){return value?new Date(value).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}):'—';}
+function freshnessNote(){return '頁面每 60 秒自動檢查；官方快照盤中由 Actions 約每 15 分鐘更新，實際資料依來源發布時間。';}
+function loadData({manual=false}={}){
+  if(loadPromise) return loadPromise;
+  const showSpinner=manual||!state.fetchedAt;
+  if(showSpinner){document.body.classList.add('loading');$('#refreshBtn').disabled=true;}
+  if(manual)setStatus('正在檢查最新已部署快照',`手動重新載入會重讀同源資料快照。${state.lastSuccessAt?`上次成功檢查：${taipeiTime(state.lastSuccessAt)}。`:''}`);
+  else if(!state.fetchedAt)setStatus('正在讀取官方資料快照','載入 TWSE、TPEx 股票與期交所每日行情…');
+  loadPromise=(async()=>{
   try{
-    const snapshot=await fetchJson('./data/market.json');
+    const snapshot=await fetchJson(`./data/market.json?check=${Date.now()}`);
+    if(!snapshot||!snapshot.fetchedAt)throw new Error('資料快照缺少更新時間');
+    const checkedAt=new Date().toISOString();
+    if(state.fetchedAt===String(snapshot.fetchedAt)){
+      state.lastSuccessAt=checkedAt;
+      setStatus('快照尚未更新',`畫面保留目前資料；上次成功檢查 ${taipeiTime(state.lastSuccessAt)}，快照擷取時間 ${taipeiTime(state.fetchedAt)}。`);
+      return;
+    }
     const {listed:twse,otc:tpex,emerging}=snapshot;
-    state.futures=Array.isArray(snapshot.futures)?snapshot.futures:[];
-    state.futuresError=snapshot.futuresError||null;
     const twseRows=(Array.isArray(twse)?twse:[]).map(normalizeTwse).filter(Boolean);
     const tpexRows=(Array.isArray(tpex)?tpex:[]).map(normalizeTpex).filter(Boolean);
     const emergingRows=(Array.isArray(emerging)?emerging:[]).map(normalizeEmerging).filter(Boolean);
     if(!twseRows.length&&!tpexRows.length&&!emergingRows.length) throw new Error('官方資料沒有可用的成交量及價格欄位');
+    state.futures=Array.isArray(snapshot.futures)?snapshot.futures:[];
+    state.futuresError=snapshot.futuresError||null;
     state.sourceRows={listed:twseRows,otc:tpexRows,emerging:emergingRows};
     state.dates={listed:[...new Set(twseRows.map(x=>dateKey(x.date)).filter(Boolean))].sort(),otc:[...new Set(tpexRows.map(x=>dateKey(x.date)).filter(Boolean))].sort(),emerging:[...new Set(emergingRows.map(x=>dateKey(x.date)).filter(Boolean))].sort()};
     const shared=state.dates.listed.filter(d=>state.dates.otc.includes(d)&&state.dates.emerging.includes(d)).sort();
     state.commonDate=shared.length>0;
     if(state.commonDate){state.stamp=shared.at(-1);state.rows=[...twseRows.filter(x=>dateKey(x.date)===state.stamp),...tpexRows.filter(x=>dateKey(x.date)===state.stamp),...emergingRows.filter(x=>dateKey(x.date)===state.stamp)];}
     else {state.stamp='';state.rows=[...twseRows,...tpexRows,...emergingRows];}
+    state.fetchedAt=String(snapshot.fetchedAt);state.lastSuccessAt=checkedAt;
     render();
     const listedDate=state.dates.listed.at(-1)||'';const otcDate=state.dates.otc.at(-1)||'';const emergingDate=state.dates.emerging.at(-1)||'';
     const dateText=state.commonDate?formatDate(state.stamp):`上市 ${formatDate(listedDate)}｜上櫃 ${formatDate(otcDate)}｜興櫃 ${formatDate(emergingDate)}`;
     $('#reportDate').textContent=dateText; $('#sessionBadge').textContent=state.commonDate?'共同資料日':'市場資料日不同';
     const dateNotice=state.commonDate?`共同資料日：${formatDate(state.stamp)}`:`三來源目前未齊於同一資料日；各市場分別使用自己的最新日行情（上市 ${formatDate(listedDate)}、上櫃 ${formatDate(otcDate)}、興櫃 ${formatDate(emergingDate)}），跨市場合併排名不可視為同一交易日比較。`;
-    const fetchedAt=snapshot.fetchedAt?new Date(snapshot.fetchedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',month:'2-digit',day:'2-digit',hour12:false}):'—';
-    setStatus('官方資料快照已載入',`${dateNotice} ・ 上市 ${twseRows.length.toLocaleString()} 檔、上櫃 ${tpexRows.length.toLocaleString()} 檔、興櫃 ${emergingRows.length.toLocaleString()} 檔 ・ 抓取時間 ${fetchedAt}（台北；由 GitHub Actions 定期更新）`);
+    setStatus('官方資料快照已載入',`${dateNotice} ・ 上市 ${twseRows.length.toLocaleString()} 檔、上櫃 ${tpexRows.length.toLocaleString()} 檔、興櫃 ${emergingRows.length.toLocaleString()} 檔 ・ 快照擷取 ${taipeiTime(state.fetchedAt)}；本頁成功檢查 ${taipeiTime(state.lastSuccessAt)}（台北）。`);
   }catch(err){
-    console.error(err); state.rows=[];state.futures=[];state.futuresError=err.message; render(); $('#reportDate').textContent='暫無資料'; $('#sessionBadge').textContent='連線失敗';
-    setStatus('無法取得官方日行情',`${err.message}。請確認網路或稍後重試；若以 file:// 開啟時瀏覽器阻擋跨來源請求，請在本機啟動簡易 HTTP 伺服器。`,true);
-  }finally{document.body.classList.remove('loading');$('#refreshBtn').disabled=false;}
+    console.error(err);
+    if(state.fetchedAt){setStatus('快照檢查失敗，保留目前資料',`${err.message}。上次成功檢查 ${taipeiTime(state.lastSuccessAt)}；頁面會在 60 秒後自動重試。`,true);}
+    else {setStatus('無法載入行情快照',`${err.message}。頁面會每 60 秒自動重試；請稍後再試。`,true);}
+  }finally{if(showSpinner){document.body.classList.remove('loading');$('#refreshBtn').disabled=false;}}
+  })().finally(()=>{loadPromise=null;});
+  return loadPromise;
 }
-function setStatus(title,text,error=false){$('#statusTitle').textContent=title;$('#statusText').textContent=text;$('#statusBox').classList.toggle('error',error);}
+function setStatus(title,text,error=false){$('#statusTitle').textContent=title;$('#statusText').textContent=`${text} ${freshnessNote()}`;$('#statusBox').classList.toggle('error',error);}
 function visibleRows(){
   if(state.market==='all') return state.rows;
   const key=state.market;
@@ -141,7 +159,7 @@ function sessionCopy(){
 document.querySelectorAll('.session-tab').forEach(b=>b.addEventListener('click',()=>{state.session=b.dataset.session;document.querySelectorAll('.session-tab').forEach(t=>{t.classList.toggle('selected',t===b);t.setAttribute('aria-selected',t===b?'true':'false');});sessionCopy();}));
 document.querySelectorAll('[data-market]').forEach(b=>b.addEventListener('click',()=>{state.market=b.dataset.market;document.querySelectorAll('[data-market]').forEach(x=>x.classList.toggle('active',x===b));render();}));
 document.querySelectorAll('[data-direction]').forEach(b=>b.addEventListener('click',()=>{state.direction=b.dataset.direction;document.querySelectorAll('[data-direction]').forEach(x=>x.classList.toggle('active',x===b));render();}));
-$('#refreshBtn').addEventListener('click',loadData);$('#retryBtn').addEventListener('click',loadData);$('#todayBtn').addEventListener('click',loadData);
+$('#refreshBtn').addEventListener('click',()=>loadData({manual:true}));$('#retryBtn').addEventListener('click',()=>loadData({manual:true}));$('#todayBtn').addEventListener('click',()=>loadData({manual:true}));
 $('#report-date').addEventListener('change',()=>{const v=$('#report-date').value;if(v){const current=state.commonDate?formatDate(state.stamp):`上市 ${formatDate(state.dates.listed.at(-1))}、上櫃 ${formatDate(state.dates.otc.at(-1))}、興櫃 ${formatDate(state.dates.emerging.at(-1))}`;setStatus('日期選擇提示',`官方公開端點目前提供最新日行情，尚未提供此頁歷史日期回查；報表仍顯示來源最新資料日期：${current}。`);}});
 function tick(){const d=taipeiNow();$('#clock').textContent=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} TST`;}
-tick();setInterval(tick,30000);sessionCopy();const d=taipeiNow();$('#report-date').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;loadData();
+tick();setInterval(tick,30000);sessionCopy();const d=taipeiNow();$('#report-date').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;loadData();setInterval(()=>loadData(),60000);

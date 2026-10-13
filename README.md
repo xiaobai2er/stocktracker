@@ -13,7 +13,7 @@
 
 ## GitHub Pages
 
-官方 API 沒有提供瀏覽器跨來源讀取所需的 CORS 標頭，因此 GitHub Actions 會在伺服器端抓取官方資料，產生同源的 `data/market.json`，再部署靜態頁面。頁面顯示快照抓取時間；Actions 排程為台灣時間平日 08:50、09:00–13:45 每 15 分鐘，以及 14:00。GitHub 排程可能延遲，盤中資料不保證即時。
+官方 API 沒有提供瀏覽器跨來源讀取所需的 CORS 標頭，因此 GitHub Actions 會在伺服器端抓取官方資料，產生同源的 `data/market.json`，再部署靜態頁面。Actions 排程為台灣時間平日 08:50、09:00–13:45 每 15 分鐘，以及 14:00；GitHub 排程可能延遲。頁面每 60 秒以時間戳 query parameter 和 `no-store` 檢查已部署快照；快照時間未變時不重繪排行。頁面的「更新資料」按鈕也只會重讀已部署快照，不會直接請求官方 API。檢查失敗會保留上次成功載入的畫面，並在下一個 60 秒週期重試。故此盤中資料不保證即時，實際行情時間依官方來源發布時間為準。
 
 首次啟用：在 GitHub repository 的 **Settings → Pages → Build and deployment → Source** 選擇 **GitHub Actions**。之後 `main` 有 push、手動執行 workflow，或到排程時間時會抓取資料並部署。這份本機修改不會自動啟用 Pages，也不會推送或發布網站。
 
