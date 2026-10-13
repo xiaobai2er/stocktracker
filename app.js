@@ -184,8 +184,9 @@ function renderFutures(){
   const rows=Array.isArray(state.futures)?state.futures:[];
   const latest=[...new Set(rows.map(x=>dateKey(x.Date)).filter(Boolean))].sort().at(-1)||'';
   $('#futuresDate').textContent=formatDate(latest);
+  $('#futuresFetchedAt').textContent=state.fetchedAt?taipeiTime(state.fetchedAt):'—';
   if(state.futuresError){
-    $('#futuresRows').innerHTML='<tr><td colspan="4" class="empty-state">期貨每日行情暫時無法取得；股票排行仍可正常使用。</td></tr>';
+    $('#futuresRows').innerHTML='<tr><td colspan="5" class="empty-state">期貨每日行情暫時無法取得；股票排行仍可正常使用。</td></tr>';
     $('#futuresMessage').textContent='本次期交所期貨資料抓取失敗；股票排行榜不受影響。';
     $('#futuresCount').textContent='資料暫缺';
     return;
@@ -193,15 +194,30 @@ function renderFutures(){
   const byContract=new Map();
   for(const row of rows){
     if(dateKey(row.Date)!==latest) continue;
-    const contract=clean(row.Contract);const volume=num(row.Volume);
-    if(!contract||volume===null) continue;
-    const item=byContract.get(contract)||{contract,volume:0};
-    item.volume+=volume;byContract.set(contract,item);
+    const contract=clean(row.Contract);const volume=num(row.Volume)??0;
+    if(!contract) continue;
+    const item=byContract.get(contract)||{contract,volume:0,months:new Map()};
+    item.volume+=volume;
+    const monthName=clean(row['ContractMonth(Week)'])||'—';
+    const month=item.months.get(monthName)||{month:monthName,volume:0,rows:[]};
+    month.volume+=volume;
+    month.rows.push({price:num(row.Last),volume,session:clean(row.TradingSession)});
+    item.months.set(monthName,month);byContract.set(contract,item);
+  }
+  for(const item of byContract.values()){
+    const months=[...item.months.values()].filter(month=>month.rows.some(row=>row.price!==null)).sort((a,b)=>b.volume-a.volume);
+    const month=months[0]||null;
+    const quote=month?.rows.filter(row=>row.price!==null).sort((a,b)=>b.volume-a.volume)[0]||null;
+    item.month=month?.month||'';item.price=quote?.price??null;item.session=quote?.session||'';
   }
   const ranked=[...byContract.values()].sort((a,b)=>b.volume-a.volume).slice(0,5);
-  $('#futuresRows').innerHTML=ranked.length?ranked.map((item,index)=>`<tr><td><span class="rank-num ${index<3?'top-three':''}">${String(index+1).padStart(2,'0')}</span></td><td><span class="stock-name">${escapeHtml(futuresNames[item.contract]||item.contract)}</span></td><td><code class="futures-code">${escapeHtml(item.contract)}</code></td><td class="numeric"><span class="volume-value">${fmt.format(item.volume)}</span></td></tr>`).join(''):'<tr><td colspan="4" class="empty-state">目前沒有可用的期貨每日行情資料。</td></tr>';
+  $('#futuresRows').innerHTML=ranked.length?ranked.map((item,index)=>{
+    const sessionLabel=item.session==='一般'?'日盤':item.session==='盤後'?'盤後':item.session;
+    const priceCell=item.price===null?'<span class="futures-price unavailable">—</span>':`<span class="futures-price">${new Intl.NumberFormat('zh-TW',{maximumFractionDigits:4}).format(item.price)}</span><small class="futures-month">${escapeHtml(item.month)} · ${escapeHtml(sessionLabel)} Last</small>`;
+    return `<tr><td><span class="rank-num ${index<3?'top-three':''}">${String(index+1).padStart(2,'0')}</span></td><td><span class="stock-name">${escapeHtml(futuresNames[item.contract]||item.contract)}</span></td><td><code class="futures-code">${escapeHtml(item.contract)}</code></td><td class="numeric">${priceCell}</td><td class="numeric"><span class="volume-value">${fmt.format(item.volume)}</span></td></tr>`;
+  }).join(''):'<tr><td colspan="5" class="empty-state">目前沒有可用的期貨每日行情資料。</td></tr>';
   $('#futuresCount').textContent=ranked.length?`${ranked.length} 項商品`:'—';
-  $('#futuresMessage').textContent='按 Contract 加總同一資料日的所有到期月份與 TradingSession（含一般及盤後）成交量。官方每日行情，非逐筆即時。';
+  $('#futuresMessage').textContent=`成交量依商品加總資料日 ${formatDate(latest)} 的各到期月與日盤、盤後；代表價格取成交量最高且有 Last 的合約月／時段。快照抓取時間 ${taipeiTime(state.fetchedAt)}（台北）。TAIFEX 官方每日行情，非逐筆即時。`;
 }
 function stock(x){const marketLabel={listed:'上市',otc:'上櫃',emerging:'興櫃'}[x.market]||'';return `<span class="stock-code">${escapeHtml(x.code)}</span><span class="stock-name">${escapeHtml(x.name)}</span><span class="stock-market-tag">${marketLabel}</span>`;}
 function pct(v){if(v===null||!Number.isFinite(v))return '<span class="pct flat">—</span>';const cls=v>0?'up':v<0?'down':'flat';return `<span class="pct ${cls}">${v>0?'+':''}${Number(v).toFixed(2)}%</span>`;}

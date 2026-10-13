@@ -108,3 +108,6 @@ body{background:#090711;color:#f6f1ff}
 .futures-source-badge,.futures-frequency{background:#211738;border-color:#47335f;color:#2ee9ff}.futures-icon{background:#211738;color:#8b5cf6}.futures-date-label,.futures-date-label strong{color:#c3b9d3}.futures-code{background:#211738}
 .price-source{display:block;margin-top:2px;font-size:14.33px;line-height:1.4}.yahoo-source{color:#2ee9ff}.official-source{color:#ff4ea3}
 @media(max-width:650px){.futures-heading-meta{gap:6px;flex-wrap:wrap;justify-content:flex-end}.futures-source-badge,.futures-date-label,.futures-date-label strong{font-size:13px}.futures-frequency{font-size:12px}.futures-code{font-size:14px}.futures-card .table-wrap table{min-width:530px}.futures-card .rank-card-head{align-items:flex-start;flex-wrap:wrap}.futures-frequency{margin-left:auto}}
+
+.futures-price{color:#2ee9ff;font:15.33px 'DM Mono',monospace}.futures-price.unavailable{color:#ff4ea3}.futures-month{display:block;margin-top:2px;color:#b8adcb;font:13.33px 'Noto Sans TC',sans-serif}.futures-card .table-wrap table{min-width:650px}
+@media(max-width:650px){.futures-card .table-wrap table{min-width:650px}}
