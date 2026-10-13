@@ -1,5 +1,5 @@
 const $ = (s) => document.querySelector(s);
-const state = { rows: [], sourceRows: { listed: [], otc: [], emerging: [] }, dates: { listed: [], otc: [], emerging: [] }, futures: [], futuresError: null, yahooQuotes: {}, yahooError: null, yahooFetchedAt: null, market: 'all', direction: 'up', session: 'post', stamp: null, commonDate: false, fetchedAt: null, lastSuccessAt: null };
+const state = { rows: [], sourceRows: { listed: [], otc: [], emerging: [] }, dates: { listed: [], otc: [], emerging: [] }, yahooQuotes: {}, yahooError: null, yahooFetchedAt: null, market: 'all', direction: 'up', session: 'post', stamp: null, commonDate: false, fetchedAt: null, lastSuccessAt: null };
 const fmt = new Intl.NumberFormat('zh-TW');
 let loadPromise = null;
 let workerQuotePromise = null;
@@ -110,8 +110,6 @@ function loadData({manual=false}={}){
     const tpexRows=(Array.isArray(tpex)?tpex:[]).map(normalizeTpex).filter(Boolean);
     const emergingRows=(Array.isArray(emerging)?emerging:[]).map(normalizeEmerging).filter(Boolean);
     if(!twseRows.length&&!tpexRows.length&&!emergingRows.length) throw new Error('官方資料沒有可用的成交量及價格欄位');
-    state.futures=Array.isArray(snapshot.futures)?snapshot.futures:[];
-    state.futuresError=snapshot.futuresError||null;
     state.yahooError=snapshot.yahooError||null;
     state.yahooFetchedAt=snapshot.yahooFetchedAt||null;
     state.sourceRows={listed:twseRows,otc:tpexRows,emerging:emergingRows};
@@ -170,7 +168,6 @@ function render(){
   $('#summaryMoverName').textContent=gainLeader?gainLeader.name:'—';
   $('#summaryMoverCode').textContent=gainLeader?`${gainLeader.code} ・ ${{listed:'上市',otc:'上櫃',emerging:'興櫃'}[gainLeader.market]} ・ ${gainLeader.yahooAvailable?'Yahoo':'官方日資料'}`:'目前沒有有效漲跌幅';
   $('#summaryMoverValue').innerHTML=gainLeader?pct(gainLeader.pct):'—';
-  renderFutures();
   $('#volumeRows').innerHTML=vols.length?vols.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td><td>${price(x)}</td><td>${pctWithSource(x)}</td></tr>`).join(''):empty(5);
   const max=Math.max(1,...movers.map(x=>Math.abs(x.pct)));
   $('#changeRows').innerHTML=movers.length?movers.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td>${price(x)}</td><td><div class="bar-cell"><span class="mini-bar"><i style="width:${Math.max(5,Math.abs(x.pct)/max*100)}%"></i></span>${pctWithSource(x)}</div></td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td></tr>`).join(''):empty(5);
@@ -178,46 +175,6 @@ function render(){
   $('#changeFoot').textContent=state.direction==='up'?'依漲幅由高至低':'依跌幅由深至淺';
   const yahooCount=rows.filter(x=>x.yahooAvailable).length;
   $('#priceBasisLabel').textContent=yahooCount===rows.length&&rows.length?'價格與漲跌幅皆採 Yahoo Finance 報價':'Yahoo 報價優先；缺漏時保留官方日價格與漲跌幅，排行為混合來源';
-}
-const futuresNames={TX:'臺股期貨',MTX:'小型臺指期貨',TMF:'微型臺指期貨',MX1:'小型臺指W1',MX2:'小型臺指W2',MX4:'小型臺指W4',MX5:'小型臺指W5',TE:'電子期貨',ZEF:'小型電子期貨',TF:'金融期貨',ZFF:'小型金融期貨',GTF:'櫃買期貨',G2F:'富櫃200期貨',E4F:'臺灣永續期貨',BTF:'臺灣生技期貨',SOF:'半導體30期貨',SHF:'航運期貨',M1F:'臺灣中型100期貨',XIF:'非金電期貨',TJF:'東證期貨',UDF:'美國道瓊期貨',SPF:'美國標普500期貨',UNF:'美國那斯達克100期貨',SXF:'美國費城半導體期貨',F1F:'英國富時100期貨',GDF:'黃金期貨',TGF:'臺幣黃金期貨',BRF:'布蘭特原油期貨',RHF:'美元兌人民幣期貨',RTF:'美元兌離岸人民幣期貨',XEF:'歐元兌美元期貨',XJF:'美元兌日圓期貨',XAF:'澳幣兌美元期貨',XBF:'英鎊兌美元期貨'};
-function renderFutures(){
-  const rows=Array.isArray(state.futures)?state.futures:[];
-  const latest=[...new Set(rows.map(x=>dateKey(x.Date)).filter(Boolean))].sort().at(-1)||'';
-  $('#futuresDate').textContent=formatDate(latest);
-  $('#futuresFetchedAt').textContent=state.fetchedAt?taipeiTime(state.fetchedAt):'—';
-  if(state.futuresError){
-    $('#futuresRows').innerHTML='<tr><td colspan="5" class="empty-state">期貨每日行情暫時無法取得；股票排行仍可正常使用。</td></tr>';
-    $('#futuresMessage').textContent='本次期交所期貨資料抓取失敗；股票排行榜不受影響。';
-    $('#futuresCount').textContent='資料暫缺';
-    return;
-  }
-  const byContract=new Map();
-  for(const row of rows){
-    if(dateKey(row.Date)!==latest) continue;
-    const contract=clean(row.Contract);const volume=num(row.Volume)??0;
-    if(!contract) continue;
-    const item=byContract.get(contract)||{contract,volume:0,months:new Map()};
-    item.volume+=volume;
-    const monthName=clean(row['ContractMonth(Week)'])||'—';
-    const month=item.months.get(monthName)||{month:monthName,volume:0,rows:[]};
-    month.volume+=volume;
-    month.rows.push({price:num(row.Last),volume,session:clean(row.TradingSession)});
-    item.months.set(monthName,month);byContract.set(contract,item);
-  }
-  for(const item of byContract.values()){
-    const months=[...item.months.values()].filter(month=>month.rows.some(row=>row.price!==null)).sort((a,b)=>b.volume-a.volume);
-    const month=months[0]||null;
-    const quote=month?.rows.filter(row=>row.price!==null).sort((a,b)=>b.volume-a.volume)[0]||null;
-    item.month=month?.month||'';item.price=quote?.price??null;item.session=quote?.session||'';
-  }
-  const ranked=[...byContract.values()].sort((a,b)=>b.volume-a.volume).slice(0,5);
-  $('#futuresRows').innerHTML=ranked.length?ranked.map((item,index)=>{
-    const sessionLabel=item.session==='一般'?'日盤':item.session==='盤後'?'盤後':item.session;
-    const priceCell=item.price===null?'<span class="futures-price unavailable">—</span>':`<span class="futures-price">${new Intl.NumberFormat('zh-TW',{maximumFractionDigits:4}).format(item.price)}</span><small class="futures-month">${escapeHtml(item.month)} · ${escapeHtml(sessionLabel)} Last</small>`;
-    return `<tr><td><span class="rank-num ${index<3?'top-three':''}">${String(index+1).padStart(2,'0')}</span></td><td><span class="stock-name">${escapeHtml(futuresNames[item.contract]||item.contract)}</span></td><td><code class="futures-code">${escapeHtml(item.contract)}</code></td><td class="numeric">${priceCell}</td><td class="numeric"><span class="volume-value">${fmt.format(item.volume)}</span></td></tr>`;
-  }).join(''):'<tr><td colspan="5" class="empty-state">目前沒有可用的期貨每日行情資料。</td></tr>';
-  $('#futuresCount').textContent=ranked.length?`${ranked.length} 項商品`:'—';
-  $('#futuresMessage').textContent=`成交量依商品加總資料日 ${formatDate(latest)} 的各到期月與日盤、盤後；代表價格取成交量最高且有 Last 的合約月／時段。快照抓取時間 ${taipeiTime(state.fetchedAt)}（台北）。TAIFEX 官方每日行情，非逐筆即時。`;
 }
 function stock(x){const marketLabel={listed:'上市',otc:'上櫃',emerging:'興櫃'}[x.market]||'';return `<span class="stock-code">${escapeHtml(x.code)}</span><span class="stock-name">${escapeHtml(x.name)}</span><span class="stock-market-tag">${marketLabel}</span>`;}
 function pct(v){if(v===null||!Number.isFinite(v))return '<span class="pct flat">—</span>';const cls=v>0?'up':v<0?'down':'flat';return `<span class="pct ${cls}">${v>0?'+':''}${Number(v).toFixed(2)}%</span>`;}

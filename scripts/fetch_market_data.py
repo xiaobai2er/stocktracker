@@ -18,7 +18,6 @@ SOURCES = {
     "listedCompanies": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
     "otcCompanies": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O",
 }
-FUTURES_SOURCE = "https://openapi.taifex.com.tw/v1/DailyMarketReportFut"
 YAHOO_CRUMB_SOURCE = "https://query1.finance.yahoo.com/v1/test/getcrumb"
 YAHOO_QUOTE_SOURCE = "https://query1.finance.yahoo.com/v7/finance/quote"
 YAHOO_BATCH_SIZE = 100
@@ -163,13 +162,6 @@ def main() -> None:
         "otc": source_data["otc"],
         "emerging": source_data["emerging"],
     }
-    snapshot["futures"] = []
-    snapshot["futuresError"] = None
-    try:
-        snapshot["futures"] = get_json(FUTURES_SOURCE)
-    except Exception as error:
-        snapshot["futuresError"] = str(error)
-        print(f"Warning: futures endpoint unavailable; keeping stock snapshot: {error}", flush=True)
     try:
         snapshot["yahooQuotes"], snapshot["yahooError"] = fetch_yahoo_quotes(yahoo_symbols)
     except Exception as error:

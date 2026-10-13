@@ -1,6 +1,6 @@
 # 台股盤勢排名
+這是無 build step 的台股靜態網站，提供上市、上櫃與興櫃個股成交量及漲跌幅排行，可切換市場、漲幅／跌幅與盤前、盤中、盤後說明。
 
-這是無 build step 的靜態網站。頁面提供台灣上市、上櫃及興櫃市場的成交量與漲跌幅前五名，以及獨立期貨商品成交口數排行，可切換股票市場、漲幅／跌幅與盤前／盤中／盤後說明。
 
 ## 資料來源與計算
 
@@ -9,9 +9,7 @@
 - 興櫃 TPEx：[`tpex_esb_latest_statistics`](https://www.tpex.org.tw/openapi/v1/tpex_esb_latest_statistics)，使用 `Date`、`SecuritiesCompanyCode`、`CompanyName`、`PreviousAveragePrice`、`Average`、`TransactionVolume`。興櫃是議價交易，漲跌幅按「日均價相對前日均價」計算；日均價缺值或前日均價為零時不列入漲跌幅排行。成交量統一以股數除以 1,000 換算成張數呈現。
 - 上市／上櫃日行情會分別以 TWSE `t187ap03_L`、TPEx `mopsfin_t187ap03_O` 官方公司名單篩選代碼，排除 ETF、權證等非公司股票標的；興櫃來源為專屬興櫃股票行情端點。公司代碼清單和行情快照都在每次資料抓取時更新。
 - 以上是官方最新日行情快照，不是逐筆或即時報價。若三個市場都有共同資料日，跨市場排名使用最新共同日；否則各市場使用自己的最新日期，並分別標示資料日，跨市場排名不代表同一交易日比較。歷史日期回查目前未支援。
-- 期貨使用期交所 [`DailyMarketReportFut`](https://openapi.taifex.com.tw/v1/DailyMarketReportFut) 每日行情，按 `Contract` 加總最新資料日的所有 `ContractMonth(Week)` 與 `TradingSession` `Volume`（含一般及盤後時段），另列前五商品，不併入股票排名。此資料不是逐筆即時行情。若期貨端點抓取失敗，快照會保留錯誤欄位及空期貨清單，股票資料仍會部署並正常呈現。
 
-- 期貨排行的成交口數會加總各到期月與交易時段；代表價格取商品成交量最高且有 `Last` 的合約月份／時段，不會把不同月份價格相加。表格同時標示該月份／時段及快照抓取時間。此為期交所每日行情，非逐筆即時行情。
 
 ## GitHub Pages
 
@@ -25,11 +23,9 @@
 
 ## Yahoo Finance 個股價格與漲跌幅
 
-- 上市代碼加 `.TW`、上櫃及興櫃代碼加 `.TWO`，由 Yahoo Finance Spark chart API 取最新可用價格、前收、漲跌額、漲跌幅與行情時間。官方成交量與期貨排行仍採原有 TWSE、TPEx、TAIFEX 日行情資料。
 - Yahoo 官方交易所資料表列出台灣 TWSE（`.TW`）及 Taiwan OTC（`.TWO`）報價延遲 20 分鐘。興櫃亦以 `.TWO` 試取；是否有報價取決於 Yahoo 個別代碼收錄。取得 Yahoo 報價時以 Yahoo 價格和漲跌幅排序；缺漏時保留並標示官方最新收盤價／興櫃日均價與官方漲跌幅，故報價不完整時排行會混用來源。[Yahoo 交易所與資料延遲表](https://help.yahoo.com/kb/finance/article-exchanges-data-delays-sln2310.html)
 - Yahoo 未提供穩定公開開發者 API 或服務保證；Spark 是 Yahoo Finance 網站使用的未正式承諾介面，欄位、限流或可用性可能改變。報價不代表即時行情，也不適合作為下單依據。
 - Actions 約每 15 分鐘更新官方靜態快照；頁面每 60 秒向 Worker 輪詢全市場 Yahoo 代碼。Yahoo 交易所資料約延遲 20 分鐘，因此頁面輪詢頻率不是即時行情或上游更新承諾。Worker 每次接收最多 100 個代碼，再以每次 20 個代碼呼叫 Spark（最多 5 個上游請求）；回應快取 120 秒。頁面依序更新全部股票分批，某一輪可能需要數十秒。
-- GitHub Actions runner 直接呼叫 Yahoo v7 quote 曾回 HTTP 406，所以靜態 snapshot 的 Yahoo 價格可能為零筆；官方日行情與期貨仍會正常發布。頁面會顯示 Yahoo 報價狀態，缺漏個股回退顯示官方日行情。
 
 ### Cloudflare Worker
 
