@@ -162,7 +162,13 @@ def main() -> None:
     except Exception as error:
         snapshot["futuresError"] = str(error)
         print(f"Warning: futures endpoint unavailable; keeping stock snapshot: {error}", flush=True)
-    snapshot["yahooQuotes"], snapshot["yahooError"] = fetch_yahoo_quotes(yahoo_symbols)
+    try:
+        snapshot["yahooQuotes"], snapshot["yahooError"] = fetch_yahoo_quotes(yahoo_symbols)
+    except Exception as error:
+        # Yahoo's unofficial quote API must never block the official market snapshot.
+        snapshot["yahooQuotes"] = {}
+        snapshot["yahooError"] = f"Yahoo quote fetch failed: {type(error).__name__}: {error}"
+        print(f"Warning: Yahoo quote setup failed; keeping official market data: {error}", flush=True)
     snapshot["yahooFetchedAt"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     snapshot["yahooQuoteCount"] = len(snapshot["yahooQuotes"])
     snapshot["yahooSymbolCount"] = len(yahoo_symbols)
