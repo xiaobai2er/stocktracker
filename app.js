@@ -1,7 +1,8 @@
 const $ = (s) => document.querySelector(s);
-const state = { rows: [], sourceRows: { listed: [], otc: [], emerging: [] }, dates: { listed: [], otc: [], emerging: [] }, futures: [], futuresError: null, market: 'all', direction: 'up', session: 'post', stamp: null, commonDate: false, fetchedAt: null, lastSuccessAt: null };
+const state = { rows: [], sourceRows: { listed: [], otc: [], emerging: [] }, dates: { listed: [], otc: [], emerging: [] }, futures: [], futuresError: null, yahooQuotes: {}, yahooError: null, yahooFetchedAt: null, market: 'all', direction: 'up', session: 'post', stamp: null, commonDate: false, fetchedAt: null, lastSuccessAt: null };
 const fmt = new Intl.NumberFormat('zh-TW');
 let loadPromise = null;
+let workerQuotePromise = null;
 
 function taipeiNow(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Taipei'})); }
 function dateStamp(d){ return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`; }
@@ -43,7 +44,42 @@ async function fetchJson(url){
   const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json();
 }
 function taipeiTime(value){return value?new Date(value).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}):'—';}
-function freshnessNote(){return '頁面每 60 秒自動檢查；官方快照盤中由 Actions 約每 15 分鐘更新，實際資料依來源發布時間。';}
+function freshnessNote(){return 'Yahoo 台股報價約延遲 20 分鐘；頁面每 60 秒自動檢查，Actions 快照約每 15 分鐘更新，實際資料依來源發布時間。';}
+function quoteSymbol(row){return `${row.code}.${row.market==='listed'?'TW':'TWO'}`;}
+function applyYahooQuotes(quotes){
+  state.yahooQuotes=quotes||{};
+  for(const rows of Object.values(state.sourceRows)) for(const row of rows){
+    const quote=state.yahooQuotes[quoteSymbol(row)];
+    row.yahooAvailable=Boolean(quote&&num(quote.price)!==null);
+    row.close=row.yahooAvailable?num(quote.price):null;
+    row.change=row.yahooAvailable?num(quote.change):null;
+    row.pct=row.yahooAvailable?num(quote.changePercent):null;
+    row.quoteTime=row.yahooAvailable?num(quote.marketTime):null;
+  }
+  const times=Object.values(state.yahooQuotes).map(q=>num(q.marketTime)).filter(Boolean);
+  const latest=times.length?Math.max(...times):null;
+  $('#quoteUpdateTime').textContent=latest?`Yahoo 報價時間：${taipeiTime(new Date(latest*1000).toISOString())}（台北）`:'尚無可用 Yahoo 報價時間';
+}
+async function refreshWorkerQuotes(){
+  const base=String(window.STOCKTRACKER_YAHOO_WORKER_URL||'').trim();
+  if(!base||!state.fetchedAt||workerQuotePromise)return workerQuotePromise;
+  const symbols=[...new Set(Object.values(state.sourceRows).flat().map(quoteSymbol))];
+  if(!symbols.length)return;
+  workerQuotePromise=(async()=>{
+    const fresh={};
+    for(let i=0;i<symbols.length;i+=100){
+      const url=new URL(base,location.href);url.searchParams.set('symbols',symbols.slice(i,i+100).join(','));
+      const result=await fetchJson(url.href);
+      if(!Array.isArray(result.quotes))throw new Error(result.error||'Worker 回傳格式不正確');
+      for(const quote of result.quotes){if(quote?.symbol)fresh[quote.symbol]=quote;}
+    }
+    if(Object.keys(fresh).length){applyYahooQuotes({...state.yahooQuotes,...fresh});render();}
+  })().catch(error=>{
+    console.warn('Yahoo Worker refresh failed; retaining the current snapshot quotes.',error);
+    setStatus('Yahoo 代理檢查失敗，保留現有報價',`${error.message}；下一次頁面檢查時會重試。`,true);
+  }).finally(()=>{workerQuotePromise=null;});
+  return workerQuotePromise;
+}
 function loadData({manual=false}={}){
   if(loadPromise) return loadPromise;
   const showSpinner=manual||!state.fetchedAt;
@@ -58,6 +94,7 @@ function loadData({manual=false}={}){
     if(state.fetchedAt===String(snapshot.fetchedAt)){
       state.lastSuccessAt=checkedAt;
       setStatus('快照尚未更新',`畫面保留目前資料；上次成功檢查 ${taipeiTime(state.lastSuccessAt)}，快照擷取時間 ${taipeiTime(state.fetchedAt)}。`);
+      void refreshWorkerQuotes();
       return;
     }
     const {listed:twse,otc:tpex,emerging}=snapshot;
@@ -67,7 +104,10 @@ function loadData({manual=false}={}){
     if(!twseRows.length&&!tpexRows.length&&!emergingRows.length) throw new Error('官方資料沒有可用的成交量及價格欄位');
     state.futures=Array.isArray(snapshot.futures)?snapshot.futures:[];
     state.futuresError=snapshot.futuresError||null;
+    state.yahooError=snapshot.yahooError||null;
+    state.yahooFetchedAt=snapshot.yahooFetchedAt||null;
     state.sourceRows={listed:twseRows,otc:tpexRows,emerging:emergingRows};
+    applyYahooQuotes(snapshot.yahooQuotes&&typeof snapshot.yahooQuotes==='object'?snapshot.yahooQuotes:{});
     state.dates={listed:[...new Set(twseRows.map(x=>dateKey(x.date)).filter(Boolean))].sort(),otc:[...new Set(tpexRows.map(x=>dateKey(x.date)).filter(Boolean))].sort(),emerging:[...new Set(emergingRows.map(x=>dateKey(x.date)).filter(Boolean))].sort()};
     const shared=state.dates.listed.filter(d=>state.dates.otc.includes(d)&&state.dates.emerging.includes(d)).sort();
     state.commonDate=shared.length>0;
@@ -80,6 +120,8 @@ function loadData({manual=false}={}){
     $('#reportDate').textContent=dateText; $('#sessionBadge').textContent=state.commonDate?'共同資料日':'市場資料日不同';
     const dateNotice=state.commonDate?`共同資料日：${formatDate(state.stamp)}`:`三來源目前未齊於同一資料日；各市場分別使用自己的最新日行情（上市 ${formatDate(listedDate)}、上櫃 ${formatDate(otcDate)}、興櫃 ${formatDate(emergingDate)}），跨市場合併排名不可視為同一交易日比較。`;
     setStatus('官方資料快照已載入',`${dateNotice} ・ 上市 ${twseRows.length.toLocaleString()} 檔、上櫃 ${tpexRows.length.toLocaleString()} 檔、興櫃 ${emergingRows.length.toLocaleString()} 檔 ・ 快照擷取 ${taipeiTime(state.fetchedAt)}；本頁成功檢查 ${taipeiTime(state.lastSuccessAt)}（台北）。`);
+    if(state.yahooError)setStatus('Yahoo 報價部分批次失敗',`官方成交量排行仍可使用；漲跌幅排行只計入取得 Yahoo 報價的個股。${state.yahooError}`,true);
+    void refreshWorkerQuotes();
   }catch(err){
     console.error(err);
     if(state.fetchedAt){setStatus('快照檢查失敗，保留目前資料',`${err.message}。上次成功檢查 ${taipeiTime(state.lastSuccessAt)}；頁面會在 60 秒後自動重試。`,true);}
@@ -107,7 +149,7 @@ function render(){
   const vols=[...rows].sort((a,b)=>b.volume-a.volume).slice(0,5);
   const movers=[...rows].filter(x=>x.pct!==null&&Number.isFinite(x.pct)).sort((a,b)=>state.direction==='up'?b.pct-a.pct:a.pct-b.pct).slice(0,5);
   const scopeName={all:'全部市場',listed:'上市',otc:'上櫃',emerging:'興櫃'}[state.market];
-  $('#summaryUniverse').textContent=fmt.format(rows.length);
+  $('#summaryUniverse').textContent=fmt.format(rows.filter(x=>x.yahooAvailable).length);
   $('#summaryScope').textContent=scopeName;$('#scopeCaption').textContent=scopeName;
   const volumeLeader=[...rows].sort((a,b)=>b.volume-a.volume)[0];
   const gainLeader=[...rows].filter(x=>x.pct!==null&&Number.isFinite(x.pct)).sort((a,b)=>b.pct-a.pct)[0];
@@ -118,12 +160,12 @@ function render(){
   $('#summaryMoverCode').textContent=gainLeader?`${gainLeader.code} ・ ${{listed:'上市',otc:'上櫃',emerging:'興櫃'}[gainLeader.market]}`:'目前沒有有效漲跌幅';
   $('#summaryMoverValue').innerHTML=gainLeader?pct(gainLeader.pct):'—';
   renderFutures();
-  $('#volumeRows').innerHTML=vols.length?vols.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td><td>${pct(x.pct)}</td></tr>`).join(''):empty();
+  $('#volumeRows').innerHTML=vols.length?vols.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td><td>${price(x.close)}</td><td>${pct(x.pct)}</td></tr>`).join(''):empty(5);
   const max=Math.max(1,...movers.map(x=>Math.abs(x.pct)));
-  $('#changeRows').innerHTML=movers.length?movers.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td><div class="bar-cell"><span class="mini-bar"><i style="width:${Math.max(5,Math.abs(x.pct)/max*100)}%"></i></span>${pct(x.pct)}</div></td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td></tr>`).join(''):empty();
+  $('#changeRows').innerHTML=movers.length?movers.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td>${price(x.close)}</td><td><div class="bar-cell"><span class="mini-bar"><i style="width:${Math.max(5,Math.abs(x.pct)/max*100)}%"></i></span>${pct(x.pct)}</div></td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td></tr>`).join(''):empty(5);
   $('#volumeCount').textContent=vols.length?`${vols.length} 檔`:'—';$('#changeCount').textContent=movers.length?`${movers.length} 檔`:'—';
   $('#changeFoot').textContent=state.direction==='up'?'依漲幅由高至低':'依跌幅由深至淺';
-  $('#priceBasisLabel').textContent=state.market==='all'?'跨市場漲跌幅：上市／上櫃依收盤價；興櫃依日均價':state.market==='emerging'?'興櫃漲跌幅以日均價／前日均價計算':`${state.market==='listed'?'上市':'上櫃'}漲跌幅依收盤價計算`;
+  $('#priceBasisLabel').textContent='價格與漲跌幅採 Yahoo Finance 報價欄位；各市場可用報價數可能不同';
 }
 const futuresNames={TX:'臺股期貨',MTX:'小型臺指期貨',TMF:'微型臺指期貨',MX1:'小型臺指W1',MX2:'小型臺指W2',MX4:'小型臺指W4',MX5:'小型臺指W5',TE:'電子期貨',ZEF:'小型電子期貨',TF:'金融期貨',ZFF:'小型金融期貨',GTF:'櫃買期貨',G2F:'富櫃200期貨',E4F:'臺灣永續期貨',BTF:'臺灣生技期貨',SOF:'半導體30期貨',SHF:'航運期貨',M1F:'臺灣中型100期貨',XIF:'非金電期貨',TJF:'東證期貨',UDF:'美國道瓊期貨',SPF:'美國標普500期貨',UNF:'美國那斯達克100期貨',SXF:'美國費城半導體期貨',F1F:'英國富時100期貨',GDF:'黃金期貨',TGF:'臺幣黃金期貨',BRF:'布蘭特原油期貨',RHF:'美元兌人民幣期貨',RTF:'美元兌離岸人民幣期貨',XEF:'歐元兌美元期貨',XJF:'美元兌日圓期貨',XAF:'澳幣兌美元期貨',XBF:'英鎊兌美元期貨'};
 function renderFutures(){
@@ -151,10 +193,11 @@ function renderFutures(){
 }
 function stock(x){const marketLabel={listed:'上市',otc:'上櫃',emerging:'興櫃'}[x.market]||'';return `<span class="stock-code">${escapeHtml(x.code)}</span><span class="stock-name">${escapeHtml(x.name)}</span><span class="stock-market-tag">${marketLabel}</span>`;}
 function pct(v){if(v===null||!Number.isFinite(v))return '<span class="pct flat">—</span>';const cls=v>0?'up':v<0?'down':'flat';return `<span class="pct ${cls}">${v>0?'+':''}${Number(v).toFixed(2)}%</span>`;}
-function empty(){return '<tr><td colspan="4" class="empty-state">目前沒有可用排名資料</td></tr>';}
+function price(v){return v===null||!Number.isFinite(v)?'<span class="pct flat">—</span>':`<span class="price-value">${new Intl.NumberFormat('zh-TW',{maximumFractionDigits:3}).format(v)}</span>`;}
+function empty(columns=4){return `<tr><td colspan="${columns}" class="empty-state">目前沒有可用排名資料</td></tr>`;}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function sessionCopy(){
-  const copy={pre:['盤前顯示官方最新可取得的已完成交易日行情，供開盤前參考。','不代表今日盤前委託或預估撮合；各市場日期若不同，請依各市場資料日解讀。興櫃漲跌幅按日均價計算。'],intra:['盤中顯示官方最新可取得的日行情快照，可能延遲或尚未更新，並非即時行情。','本報表不提供逐筆報價；跨市場日期可能不同。興櫃價格以日均價計算漲跌幅。'],post:['盤後以官方最新可取得日行情計算成交量及漲跌幅排名。','目前未支援歷史日期回查；來源交易日不同時會分別標示各市場資料日。興櫃漲跌幅採日均價相對前日均價。']}[state.session];$('#sessionHint').textContent=`${copy[0]} ${copy[1]}`;
+  const copy={pre:['盤前顯示 Yahoo 最新可得個股報價（台股約延遲 20 分鐘）與官方最近日成交量，供開盤前參考。','資料不代表盤前委託或預估撮合；官方成交量日期不同時會分別標示各市場資料日。'],intra:['盤中個股價格及漲跌幅採 Yahoo 延遲報價，台股約延遲 20 分鐘；成交量排行依官方日資料。','報價更新時間依 Yahoo 個別股票提供的時間顯示；本報表不提供逐筆即時行情。'],post:['盤後以 Yahoo 最新可得價格/漲跌幅與官方日成交量呈現排行。','目前未支援歷史日期回查；官方來源交易日不同時會分別標示各市場資料日。']}[state.session];$('#sessionHint').textContent=`${copy[0]} ${copy[1]}`;
 }
 document.querySelectorAll('.session-tab').forEach(b=>b.addEventListener('click',()=>{state.session=b.dataset.session;document.querySelectorAll('.session-tab').forEach(t=>{t.classList.toggle('selected',t===b);t.setAttribute('aria-selected',t===b?'true':'false');});sessionCopy();}));
 document.querySelectorAll('[data-market]').forEach(b=>b.addEventListener('click',()=>{state.market=b.dataset.market;document.querySelectorAll('[data-market]').forEach(x=>x.classList.toggle('active',x===b));render();}));

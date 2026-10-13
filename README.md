@@ -20,3 +20,19 @@
 ## 本機預覽
 
 需使用 HTTP 伺服器以載入同源 JSON。先執行 `python scripts/fetch_market_data.py` 下載官方快照，再於 repo 根目錄執行 `python -m http.server 8000`，瀏覽 `http://localhost:8000`。也可以直接開啟 `index.html`，但瀏覽器可能會阻擋 `file://` 對本機 JSON 的讀取。
+
+## Yahoo Finance 個股價格與漲跌幅
+
+- 上市代碼加 `.TW`、上櫃及興櫃代碼加 `.TWO`，由 Yahoo Finance quote API 取最新可用價格、前收、漲跌額、漲跌幅與行情時間。官方成交量與期貨排行仍採原有 TWSE、TPEx、TAIFEX 日行情資料。
+- Yahoo 官方交易所資料表列出台灣 TWSE（`.TW`）及 Taiwan OTC（`.TWO`）報價延遲 20 分鐘。興櫃亦以 `.TWO` 試取；是否有報價取決於 Yahoo 個別代碼收錄，沒有 Yahoo 報價的股票不會進入漲跌幅排行，官方成交量排行仍保留該股票。[Yahoo 交易所與資料延遲表](https://help.yahoo.com/kb/finance/article-exchanges-data-delays-sln2310.html)
+- Yahoo 未提供穩定公開開發者 API 或服務保證；目前使用 Yahoo Finance 網站使用的 quote 介面，cookie、crumb、欄位或限流政策變動都可能令價格快照暫時失敗。這時官方成交量、期貨排行仍可使用。報價不代表即時行情，也不適合作為下單依據。
+- Actions 約每 15 分鐘更新靜態快照；若部署自有 Cloudflare Worker，頁面每 60 秒可向 Worker 檢查最新 Yahoo 價格。Yahoo 資料本身約延遲 20 分鐘，因此 60 秒是頁面檢查頻率，不是即時行情或上游更新承諾。
+
+### 自有 Cloudflare Worker（可選）
+
+1. 在 Cloudflare Dashboard 建立 Worker，將 `worker/yahoo-proxy.js` 貼入 Worker 編輯器並部署。此 Worker 代理 Yahoo quote API，不含第三方 Worker URL 或憑證。
+2. 設定 Worker 變數 `ALLOWED_ORIGIN` 為 GitHub Pages 的網站來源（例如 `https://xiaobai2er.github.io`，只填 origin，不加 repo 路徑）。設定 Worker secret `PROXY_TOKEN` 為隨機長字串。
+3. 在 GitHub repository 的 **Settings → Secrets and variables → Actions** 新增 secrets：`YAHOO_PROXY_URL` 填入 Worker URL 加 `/quotes`；`YAHOO_PROXY_TOKEN` 填入相同的 `PROXY_TOKEN`。Actions 後端會使用 token 抓取靜態快照。
+4. 將 `config.js` 的 `window.STOCKTRACKER_YAHOO_WORKER_URL` 設為同一個 `/quotes` URL 並部署網站。瀏覽器請求由 `ALLOWED_ORIGIN` 放行；Worker 對相同商品清單快取 60 秒，每個請求最多 100 個代碼。
+
+未設定 Actions secrets 時，Actions 會直接向 Yahoo 抓報價，保持靜態快照可用。`config.js` 保持空白時，頁面只使用 Actions 產生的 Yahoo 報價快照，不會直接跨網域連線。Cloudflare Worker 尚須由網站管理者在自己的 Cloudflare 帳戶建立；本 repo 沒有該帳戶的部署憑證。

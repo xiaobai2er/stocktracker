@@ -31,9 +31,12 @@ jobs:
         with:
           python-version: '3.x'
       - name: Prepare static site and fetch official market data
+        env:
+          YAHOO_PROXY_URL: ${{ secrets.YAHOO_PROXY_URL }}
+          YAHOO_PROXY_TOKEN: ${{ secrets.YAHOO_PROXY_TOKEN }}
         run: |
           mkdir -p site/data
-          cp index.html styles.css app.js site/
+          cp index.html styles.css app.js config.js site/
           python scripts/fetch_market_data.py site/data/market.json
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
