@@ -29,11 +29,8 @@
 - Actions 約每 15 分鐘更新靜態快照；若部署自有 Cloudflare Worker，頁面每 60 秒可向 Worker 檢查最新 Yahoo 價格。Yahoo 資料本身約延遲 20 分鐘，因此 60 秒是頁面檢查頻率，不是即時行情或上游更新承諾。
 - 此 repo 的 GitHub Actions runner 目前直連 Yahoo v7 quote 得到 HTTP 406；未設定自有 Worker 時，快照仍會發布官方行情，但 Yahoo 價格可能為零筆。頁面會明確顯示此狀態並回退顯示官方日行情。自有 Worker 的 v7 cookie/crumb 流程尚需在使用者 Cloudflare 帳戶部署後確認可否取得報價。
 
-### 自有 Cloudflare Worker（可選）
+### Cloudflare Worker
 
-1. 在 Cloudflare Dashboard 建立 Worker，將 `worker/yahoo-proxy.js` 貼入 Worker 編輯器並部署。此 Worker 代理 Yahoo quote API，不含第三方 Worker URL 或憑證。
-2. 設定 Worker 變數 `ALLOWED_ORIGIN` 為 GitHub Pages 的網站來源（例如 `https://xiaobai2er.github.io`，只填 origin，不加 repo 路徑）。設定 Worker secret `PROXY_TOKEN` 為隨機長字串。
-3. 在 GitHub repository 的 **Settings → Secrets and variables → Actions** 新增 secrets：`YAHOO_PROXY_URL` 填入 Worker URL 加 `/quotes`；`YAHOO_PROXY_TOKEN` 填入相同的 `PROXY_TOKEN`。Actions 後端會使用 token 抓取靜態快照。
-4. 將 `config.js` 的 `window.STOCKTRACKER_YAHOO_WORKER_URL` 設為同一個 `/quotes` URL 並部署網站。瀏覽器請求由 `ALLOWED_ORIGIN` 放行；Worker 對相同商品清單快取 60 秒，每個請求最多 100 個代碼。
+Yahoo quote proxy 已暫時部署在 `https://stocktracker-yahoo-proxy.romantic-honey.workers.dev/quotes`，並設好 `ALLOWED_ORIGIN=https://xiaobai2er.github.io`。網站管理者已提供 Cloudflare claim link，請在連結有效期限內（60 分鐘）認領部署。前端 `config.js` 已指向此 Worker；瀏覽器請求由允許的 Pages origin 放行，不使用或暴露 `PROXY_TOKEN`。
 
-未設定 Actions secrets 時，Actions 會直接向 Yahoo 抓報價，保持靜態快照可用。`config.js` 保持空白時，頁面只使用 Actions 產生的 Yahoo 報價快照，不會直接跨網域連線。Cloudflare Worker 尚須由網站管理者在自己的 Cloudflare 帳戶建立；本 repo 沒有該帳戶的部署憑證。
+頁面每 60 秒以最多 100 個代碼一批向 Worker 更新 Yahoo 報價；Actions 靜態快照仍會保存官方日行情，Yahoo 直連目前若回 HTTP 406，則快照中的 Yahoo 報價為空並由官方日價回退。認領後若 Worker URL 改變，請更新 `config.js` 的 `window.STOCKTRACKER_YAHOO_WORKER_URL` 並重新部署 Pages。Worker 原始碼仍在 `worker/yahoo-proxy.js`；如需改用自己的 Worker，請部署該檔並設定允許的 Pages origin。
