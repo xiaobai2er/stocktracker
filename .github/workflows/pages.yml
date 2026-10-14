@@ -37,7 +37,7 @@ jobs:
         run: |
           mkdir -p site/data
           cp index.html styles.css app.js config.js site/
-          if ! python scripts/fetch_market_data.py site/data/market.json; then
+          if ! timeout 90s python scripts/fetch_market_data.py site/data/market.json; then
             echo "Market refresh failed; reusing the last successfully published snapshot."
             curl --fail --silent --show-error --location --retry 3 --retry-delay 2 --max-time 30 \
               "https://xiaobai2er.github.io/stocktracker/data/market.json?fallback=${GITHUB_SHA}" \
