@@ -1,5 +1,5 @@
 # 台股盤勢排名
-這是無 build step 的台股靜態網站，提供上市、上櫃與興櫃個股成交量及漲跌幅排行，可切換市場、漲幅／跌幅與盤前、盤中、盤後說明。
+這是無 build step 的靜態市場排行網站。台股與美股分開切換；「全部市場」只合併台灣上市、上櫃、興櫃，不會混排不同市場的成交量。
 
 
 ## 資料來源與計算
@@ -32,3 +32,9 @@
 Worker 原始碼位於 `worker/yahoo-proxy.js`，部署設定位於 `wrangler.toml`。登入已授權的 Cloudflare 帳戶後，執行 `npx wrangler deploy` 發佈；設定將限制瀏覽器請求來源為 `https://xiaobai2er.github.io`。前端 `config.js` 必須指向部署後顯示的 `/quotes` URL。此 Worker 不需要 `PROXY_TOKEN`，因為前端程式無法保密 token，並以 Pages origin 限制跨來源讀取。
 
 Worker 使用 Yahoo `v8/finance/spark` 批次介面，避開 cookie/crumb 的 v7 quote 流程。Spark 每次最多接受 20 個股票代碼，Worker 每次最多處理 100 檔並串行呼叫最多 5 次上游 API，符合 Cloudflare Workers 免費方案每次請求的 subrequest 限額。單一無報價代碼會由 Yahoo 省略；各批次錯誤不會阻斷其他批次。Worker 對每個代碼批次快取 120 秒，頁面輪詢及實際 Yahoo 報價更新頻率仍須分開理解。
+
+### 美股排行
+
+美股是獨立市場模式，成交量、漲幅、跌幅榜分別透過自有 Worker 的 `/us-rankings` 讀取 Yahoo Finance `most_actives`、`day_gainers`、`day_losers` 預設 US EQUITY screener。Worker 使用 Yahoo 回傳的 `regularMarketPrice`、`regularMarketChangePercent`、`regularMarketVolume`、`regularMarketTime`、`exchangeDataDelayedBy` 與名稱/交易所欄位；成交量單位是股，價格以美元顯示。
+
+Yahoo 預設篩選器有內建條件，每類最多取 250 筆候選後再選前五，並非無條件涵蓋所有美國上市股票的完整市場排行。畫面顯示 Yahoo 回傳的行情延遲、東部時間行情時間與 Worker 擷取時間。頁面每 60 秒檢查，Worker 快取 60 秒；這是輪詢頻率。美股行情依 Yahoo 回傳的交易所延遲欄位（通常約 15–20 分鐘），台股 Yahoo 報價約延遲 20 分鐘，都不是即時報價。美股資料不會混入台股「全部市場」成交量或漲跌幅排行。

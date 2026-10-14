@@ -23,6 +23,7 @@
         <button class="market-link" data-market="listed" type="button"><span class="nav-glyph">01</span><span>上市</span></button>
         <button class="market-link" data-market="otc" type="button"><span class="nav-glyph">02</span><span>上櫃</span></button>
         <button class="market-link" data-market="emerging" type="button"><span class="nav-glyph">03</span><span>興櫃</span></button>
+        <button class="market-link" data-market="us" type="button"><span class="nav-glyph">US</span><span>美股</span></button>
       </nav>
       <div class="sidebar-divider"></div>
       <div class="sidebar-section-label">報表設定 <span>REPORT</span></div>
@@ -33,7 +34,7 @@
       </div>
       <div class="sidebar-bottom">
         <div class="market-clock"><span class="clock-dot"></span><span>台北時間</span><strong id="clock">--:--</strong></div>
-        <div class="sidebar-source"><span class="source-mark">◎</span><div><strong>官方市場資料</strong><small>TWSE ・ TPEx</small></div></div>
+        <div class="sidebar-source"><span class="source-mark">◎</span><div><strong id="sidebarSourceTitle">官方市場資料</strong><small id="sidebarSourceDetail">TWSE ・ TPEx</small></div></div>
         <div class="sidebar-version">MARKET BRIEF <span>v1.0</span></div>
       </div>
     </aside>
@@ -46,7 +47,7 @@
 
       <div class="content">
         <section class="page-heading">
-          <div><p class="overline"><span></span> DAILY MARKET SCAN</p><h1>市場掃描</h1><p class="page-subtitle">用成交量與價格變動，掌握今日台股焦點。</p></div>
+          <div><p class="overline"><span></span> DAILY MARKET SCAN</p><h1 id="pageTitle">市場掃描</h1><p class="page-subtitle" id="pageSubtitle">用成交量與價格變動，掌握今日台股焦點。</p></div>
           <div class="heading-note"><span class="note-icon">i</span><span id="sessionHint">依官方最新日行情資料整理</span></div>
         </section>
 
@@ -60,7 +61,7 @@
         </section>
 
         <section class="summary-grid" aria-label="行情摘要">
-          <article class="summary-card"><div class="summary-top"><span>Yahoo 可用報價檔數</span><span class="summary-symbol symbol-teal">▦</span></div><div class="summary-value" id="summaryUniverse">—</div><div class="summary-foot"><span>目前市場篩選</span><span id="summaryScope">全部市場</span></div></article>
+          <article class="summary-card"><div class="summary-top"><span id="summaryUniverseLabel">Yahoo 可用報價檔數</span><span class="summary-symbol symbol-teal">▦</span></div><div class="summary-value" id="summaryUniverse">—</div><div class="summary-foot"><span>目前市場篩選</span><span id="summaryScope">全部市場</span></div></article>
           <article class="summary-card"><div class="summary-top"><span>成交量領先</span><span class="summary-symbol symbol-blue">▥</span></div><div class="summary-stock" id="summaryVolumeName">等待行情</div><div class="summary-foot"><span id="summaryVolumeCode">成交量最高</span><strong id="summaryVolumeValue">—</strong></div></article>
           <article class="summary-card"><div class="summary-top"><span>漲幅領先</span><span class="summary-symbol symbol-coral">↗</span></div><div class="summary-stock" id="summaryMoverName">等待行情</div><div class="summary-foot"><span id="summaryMoverCode">漲跌幅最高</span><strong id="summaryMoverValue">—</strong></div></article>
         </section>
@@ -69,14 +70,14 @@
           <div class="section-title-row"><div><p class="overline"><span></span> MARKET LEADERS</p><h2>市場排行</h2></div><div class="scope-caption"><span class="scope-dot"></span><span id="scopeCaption">全部市場</span></div></div>
           <div class="rank-grid">
             <article class="rank-card">
-              <div class="rank-card-head"><div class="rank-title-group"><span class="rank-icon volume-icon">▥</span><div><h3>成交量排行</h3><p>依成交股數由高至低</p></div></div><span class="unit-chip">張・興櫃以股數換算</span></div>
-              <div class="table-wrap"><table><thead><tr><th class="rank-col">#</th><th>股票</th><th class="numeric">官方成交量</th><th class="numeric">行情價格</th><th class="numeric">漲跌幅</th></tr></thead><tbody id="volumeRows"><tr><td colspan="5" class="empty-state">正在讀取官方行情快照…</td></tr></tbody></table></div>
-              <div class="card-foot"><span>成交量以股數除以 1,000 換算為張</span><span id="volumeCount">—</span></div>
+              <div class="rank-card-head"><div class="rank-title-group"><span class="rank-icon volume-icon">▥</span><div><h3>成交量排行</h3><p id="volumeDescription">依成交股數由高至低</p></div></div><span class="unit-chip" id="volumeUnit">張・興櫃以股數換算</span></div>
+              <div class="table-wrap"><table><thead><tr><th class="rank-col">#</th><th>股票</th><th class="numeric" id="volumeColumnLabel">官方成交量</th><th class="numeric">行情價格</th><th class="numeric">漲跌幅</th></tr></thead><tbody id="volumeRows"><tr><td colspan="5" class="empty-state">正在讀取官方行情快照…</td></tr></tbody></table></div>
+              <div class="card-foot"><span id="volumeFootnote">成交量以股數除以 1,000 換算為張</span><span id="volumeCount">—</span></div>
             </article>
             <article class="rank-card">
               <div class="rank-card-head"><div class="rank-title-group"><span class="rank-icon movers-icon">↗</span><div><h3>漲跌幅排行</h3><p id="changeFoot">依漲幅由高至低</p></div></div><div class="direction-toggle" role="group" aria-label="漲跌方向"><button class="active" data-direction="up" type="button">漲幅</button><button data-direction="down" type="button">跌幅</button></div></div>
-              <div class="table-wrap"><table><thead><tr><th class="rank-col">#</th><th>股票</th><th class="numeric">行情價格</th><th class="numeric">漲跌幅</th><th class="numeric">官方成交量</th></tr></thead><tbody id="changeRows"><tr><td colspan="5" class="empty-state">正在讀取官方行情快照…</td></tr></tbody></table></div>
-              <div class="card-foot"><span><span id="priceBasisLabel">Yahoo Finance 延遲行情</span><span class="basis-subnote">TWSE／TPEx Yahoo 約延遲 20 分鐘；Yahoo 缺漏時回退官方收盤價／興櫃日均價，各列會標示來源</span><span class="basis-subnote" id="quoteUpdateTime">行情時間依 Yahoo 最新可用資料</span></span><span id="changeCount">—</span></div>
+              <div class="table-wrap"><table><thead><tr><th class="rank-col">#</th><th>股票</th><th class="numeric">行情價格</th><th class="numeric">漲跌幅</th><th class="numeric" id="changeVolumeColumnLabel">官方成交量</th></tr></thead><tbody id="changeRows"><tr><td colspan="5" class="empty-state">正在讀取官方行情快照…</td></tr></tbody></table></div>
+              <div class="card-foot"><span><span id="priceBasisLabel">Yahoo Finance 延遲行情</span><span class="basis-subnote" id="marketQuoteNote">TWSE／TPEx Yahoo 約延遲 20 分鐘；Yahoo 缺漏時回退官方收盤價／興櫃日均價，各列會標示來源</span><span class="basis-subnote" id="quoteUpdateTime">行情時間依 Yahoo 最新可用資料</span></span><span id="changeCount">—</span></div>
             </article>
           </div>
         </section>
