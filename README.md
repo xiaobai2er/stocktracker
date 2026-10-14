@@ -1,5 +1,5 @@
 # 台股盤勢排名
-這是無 build step 的靜態市場排行網站。台股與美股分開切換；「全部市場」只合併台灣上市、上櫃、興櫃，不會混排不同市場的成交量。
+這是無 build step 的靜態市場報表。台股排行與美股科技股區塊分開呈現；台股「全部市場」只合併台灣上市、上櫃、興櫃。
 
 
 ## 資料來源與計算
@@ -15,7 +15,7 @@
 
 官方 API 沒有提供瀏覽器跨來源讀取所需的 CORS 標頭，因此 GitHub Actions 會在伺服器端抓取官方資料，產生同源的 `data/market.json`，再部署靜態頁面。Actions 排程為台灣時間平日 08:50、09:00–13:45 每 15 分鐘，以及 14:00；GitHub 排程可能延遲。頁面每 60 秒以時間戳 query parameter 和 `no-store` 檢查已部署快照；快照時間未變時不重繪排行。頁面的「更新資料」按鈕也只會重讀已部署快照，不會直接請求官方 API。檢查失敗會保留上次成功載入的畫面，並在下一個 60 秒週期重試。故此盤中資料不保證即時，實際行情時間依官方來源發布時間為準。
 
-首次啟用：在 GitHub repository 的 **Settings → Pages → Build and deployment → Source** 選擇 **GitHub Actions**。之後 `main` 有 push、手動執行 workflow，或到排程時間時會抓取資料並部署。這份本機修改不會自動啟用 Pages，也不會推送或發布網站。
+首次啟用：在 GitHub repository 的 **Settings → Pages → Build and deployment → Source** 選擇 **GitHub Actions**。之後 `main` 有 push、手動執行 workflow，或到排程時間時會抓取資料並部署。若抓取失敗或超過 90 秒，workflow 會改用最近成功發布的快照繼續部署頁面。
 
 ## 本機預覽
 
@@ -33,8 +33,8 @@ Worker 原始碼位於 `worker/yahoo-proxy.js`，部署設定位於 `wrangler.to
 
 Worker 使用 Yahoo `v8/finance/spark` 批次介面，避開 cookie/crumb 的 v7 quote 流程。Spark 每次最多接受 20 個股票代碼，Worker 每次最多處理 100 檔並串行呼叫最多 5 次上游 API，符合 Cloudflare Workers 免費方案每次請求的 subrequest 限額。單一無報價代碼會由 Yahoo 省略；各批次錯誤不會阻斷其他批次。Worker 對每個代碼批次快取 120 秒，頁面輪詢及實際 Yahoo 報價更新頻率仍須分開理解。
 
-### 美股排行
+### 美股科技股
 
-美股是獨立市場模式，成交量、漲幅、跌幅榜分別透過自有 Worker 的 `/us-rankings` 讀取 Yahoo Finance `most_actives`、`day_gainers`、`day_losers` 預設 US EQUITY screener。Worker 使用 Yahoo 回傳的 `regularMarketPrice`、`regularMarketChangePercent`、`regularMarketVolume`、`regularMarketTime`、`exchangeDataDelayedBy` 與名稱/交易所欄位；成交量單位是股，價格以美元顯示。
+頁面在台股報表下方獨立列出 Yahoo Finance `sec-ind_sec-largest-equities_technology` 預設清單的市值前 20 檔，Worker 以 `marketCap` 由高至低排序。清單是 Yahoo 的美國 Technology sector 預設篩選，另有股價高於 US$5 的篩選條件；不是所有科技公司或所有美國上市公司的完整名單。每列顯示公司市值、美元價格、當日漲跌幅與成交股數，不依當日漲跌篩選。
 
-Yahoo 預設篩選器有內建條件，每類最多取 250 筆候選後再選前五，並非無條件涵蓋所有美國上市股票的完整市場排行。畫面顯示 Yahoo 回傳的行情延遲、東部時間行情時間與 Worker 擷取時間。頁面每 60 秒檢查，Worker 快取 60 秒；這是輪詢頻率。美股行情依 Yahoo 回傳的交易所延遲欄位（通常約 15–20 分鐘），台股 Yahoo 報價約延遲 20 分鐘，都不是即時報價。美股資料不會混入台股「全部市場」成交量或漲跌幅排行。
+Worker 使用 Yahoo 回傳的 `marketCap`、價格/漲跌欄位、`regularMarketVolume`、市場狀態、行情時間及 `exchangeDataDelayedBy`。盤前/盤後有對應 Yahoo 價格欄位時採用該時段價格與漲跌幅，否則回退最近正式盤報價。頁面每 60 秒檢查，Worker 快取 60 秒；美股行情依 Yahoo 回傳延遲欄位（實測約 15–20 分鐘），台股約 20 分鐘，輪詢頻率不代表即時行情。美股資料不會併入台股排行。

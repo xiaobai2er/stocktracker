@@ -1,10 +1,11 @@
 const API = 'https://query1.finance.yahoo.com/v8/finance/spark';
 const US_SCREENER_API = 'https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved';
+const US_TECH_SCREEN_ID = 'sec-ind_sec-largest-equities_technology';
 const MAX_SYMBOLS = 100;
 const SPARK_SYMBOLS = 20;
 const CACHE_SECONDS = 120;
 const US_CACHE_SECONDS = 60;
-const US_SCREEN_COUNT = 250;
+const US_TECH_SCREEN_COUNT = 20;
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130 Safari/537.36';
 
 function corsHeaders(origin) {
@@ -79,11 +80,12 @@ async function fetchSparkBatch(symbols) {
   });
 }
 
-async function fetchUSScreen(scrId) {
+async function fetchUSTech() {
   const url = new URL(US_SCREENER_API);
   for (const [key, value] of Object.entries({
-    count: String(US_SCREEN_COUNT),
-    scrIds: scrId,
+    count: String(US_TECH_SCREEN_COUNT),
+    start: '0',
+    scrIds: US_TECH_SCREEN_ID,
     formatted: 'false',
     lang: 'en-US',
     region: 'US',
@@ -93,59 +95,63 @@ async function fetchUSScreen(scrId) {
     headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
     signal: AbortSignal.timeout(10000)
   });
-  if (!upstream.ok) throw new Error(`Yahoo ${scrId} HTTP ${upstream.status}`);
+  if (!upstream.ok) throw new Error(`Yahoo technology screener HTTP ${upstream.status}`);
   const payload = await upstream.json();
   const result = payload?.finance?.result?.[0];
-  if (!Array.isArray(result?.quotes)) throw new Error(`Yahoo ${scrId} returned no equity rows`);
+  if (!Array.isArray(result?.quotes)) throw new Error('Yahoo technology screener returned no equity rows');
   const quotes = result.quotes.flatMap(row => {
     if (row?.quoteType !== 'EQUITY' || !/^[A-Z][A-Z0-9.-]{0,14}$/.test(row.symbol || '')) return [];
-    const price = asNumber(row.regularMarketPrice);
-    const changePercent = asNumber(row.regularMarketChangePercent);
+    const cap = asNumber(row.marketCap);
+    const marketState = row.marketState || '';
+    const sessionPrice = marketState === 'PRE' ? asNumber(row.preMarketPrice)
+      : marketState === 'POST' ? asNumber(row.postMarketPrice)
+      : null;
+    const sessionChange = marketState === 'PRE' ? asNumber(row.preMarketChange)
+      : marketState === 'POST' ? asNumber(row.postMarketChange)
+      : null;
+    const sessionChangePercent = marketState === 'PRE' ? asNumber(row.preMarketChangePercent)
+      : marketState === 'POST' ? asNumber(row.postMarketChangePercent)
+      : null;
+    const price = sessionPrice ?? asNumber(row.regularMarketPrice);
+    const change = sessionChange ?? asNumber(row.regularMarketChange);
+    const changePercent = sessionChangePercent ?? asNumber(row.regularMarketChangePercent);
     const volume = asNumber(row.regularMarketVolume);
-    if (price === null || changePercent === null || volume === null) return [];
+    if (cap === null || price === null || changePercent === null || volume === null || price <= 5) return [];
     return [{
       symbol: row.symbol,
       name: row.shortName || row.longName || row.symbol,
       exchange: row.fullExchangeName || row.exchange || '',
+      marketCap: cap,
       price,
       previousClose: asNumber(row.regularMarketPreviousClose),
-      change: asNumber(row.regularMarketChange),
+      change,
       changePercent,
       volume,
-      marketTime: asNumber(row.regularMarketTime),
+      marketTime: marketState === 'PRE' ? asNumber(row.preMarketTime)
+        : marketState === 'POST' ? asNumber(row.postMarketTime)
+        : asNumber(row.regularMarketTime),
       delayedMinutes: asNumber(row.exchangeDataDelayedBy),
-      marketState: row.marketState || '',
+      marketState,
       quoteSourceName: row.quoteSourceName || 'Yahoo Finance'
     }];
   });
-  return { total: asNumber(result.total) ?? quotes.length, quotes };
+  quotes.sort((a, b) => b.marketCap - a.marketCap);
+  return { total: asNumber(result.total) ?? quotes.length, title: result.title || 'Largest Companies In The Technology Sector', stocks: quotes.slice(0, 20) };
 }
 
-async function fetchUSRankings() {
-  const ids = { volume: 'most_actives', gainers: 'day_gainers', losers: 'day_losers' };
-  const entries = await Promise.all(Object.entries(ids).map(async ([key, id]) => {
-    try { return [key, await fetchUSScreen(id), null]; }
-    catch (error) { return [key, null, String(error.message || error)]; }
-  }));
-  const results = Object.fromEntries(entries.map(([key, result]) => [key, result]));
-  const errors = Object.fromEntries(entries.filter(([, , error]) => error).map(([key, , error]) => [key, error]));
-  if (!results.volume && !results.gainers && !results.losers) throw new Error(Object.values(errors).join('; '));
-  const volume = (results.volume?.quotes || []).sort((a, b) => b.volume - a.volume).slice(0, 5);
-  const gainers = (results.gainers?.quotes || []).filter(row => row.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent).slice(0, 5);
-  const losers = (results.losers?.quotes || []).filter(row => row.changePercent < 0).sort((a, b) => a.changePercent - b.changePercent).slice(0, 5);
-  const rows = [...volume, ...gainers, ...losers];
+async function fetchUSTechPayload() {
+  const result = await fetchUSTech();
+  const rows = result.stocks;
   const marketTimes = rows.map(row => row.marketTime).filter(Boolean);
   const delayValues = rows.map(row => row.delayedMinutes).filter(Number.isFinite);
   return {
-    rankings: { volume, gainers, losers },
-    totals: Object.fromEntries(Object.entries(results).map(([key, result]) => [key, result?.total ?? null])),
+    ...result,
     marketTime: marketTimes.length ? Math.max(...marketTimes) : null,
     delayMin: delayValues.length ? Math.min(...delayValues) : null,
     delayMax: delayValues.length ? Math.max(...delayValues) : null,
     fetchedAt: new Date().toISOString(),
-    source: 'Yahoo Finance US EQUITY predefined screeners',
-    filters: 'Yahoo predefined screen criteria; maximum 250 candidates per screener',
-    ...(Object.keys(errors).length ? { errors } : {})
+    source: 'Yahoo Finance predefined technology screener',
+    filters: 'US Technology sector; share price above $5; sorted by market capitalization'
   };
 }
 
@@ -159,20 +165,20 @@ export default {
     if (unauthorized(request, env)) return response({ error: 'Unauthorized' }, 401, request, env);
 
     const url = new URL(request.url);
-    if (url.pathname.replace(/\/$/, '') === '/us-rankings') {
-      const cacheKey = new Request(`${url.origin}/_cache/us-rankings-v1`);
+    if (url.pathname.replace(/\/$/, '') === '/us-tech') {
+      const cacheKey = new Request(`${url.origin}/_cache/us-tech-v1`);
       const cache = caches.default;
       const cached = await cache.match(cacheKey);
       if (cached) return response(await cached.json(), 200, request, env, `public, max-age=${US_CACHE_SECONDS}`);
       try {
-        const payload = await fetchUSRankings();
+        const payload = await fetchUSTechPayload();
         const cachedResponse = new Response(JSON.stringify(payload), {
           headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${US_CACHE_SECONDS}` }
         });
         ctx.waitUntil(cache.put(cacheKey, cachedResponse));
         return response(payload, 200, request, env, `public, max-age=${US_CACHE_SECONDS}`);
       } catch (error) {
-        return response({ error: String(error.message || error), rankings: { volume: [], gainers: [], losers: [] } }, 502, request, env);
+        return response({ error: String(error.message || error), stocks: [] }, 502, request, env);
       }
     }
     if (url.pathname.replace(/\/$/, '') !== '/quotes') return response({ error: 'Use /quotes?symbols=...' }, 404, request, env);

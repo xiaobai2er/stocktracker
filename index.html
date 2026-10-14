@@ -23,7 +23,6 @@
         <button class="market-link" data-market="listed" type="button"><span class="nav-glyph">01</span><span>上市</span></button>
         <button class="market-link" data-market="otc" type="button"><span class="nav-glyph">02</span><span>上櫃</span></button>
         <button class="market-link" data-market="emerging" type="button"><span class="nav-glyph">03</span><span>興櫃</span></button>
-        <button class="market-link" data-market="us" type="button"><span class="nav-glyph">US</span><span>美股</span></button>
       </nav>
       <div class="sidebar-divider"></div>
       <div class="sidebar-section-label">報表設定 <span>REPORT</span></div>
@@ -80,6 +79,15 @@
               <div class="card-foot"><span><span id="priceBasisLabel">Yahoo Finance 延遲行情</span><span class="basis-subnote" id="marketQuoteNote">TWSE／TPEx Yahoo 約延遲 20 分鐘；Yahoo 缺漏時回退官方收盤價／興櫃日均價，各列會標示來源</span><span class="basis-subnote" id="quoteUpdateTime">行情時間依 Yahoo 最新可用資料</span></span><span id="changeCount">—</span></div>
             </article>
           </div>
+        </section>
+
+        <section class="ranking-section us-tech-section" id="us-tech" aria-label="美股科技公司市值排名">
+          <div class="section-title-row"><div><p class="overline"><span></span> US TECHNOLOGY</p><h2>美股科技股｜市值前 20</h2></div><div class="scope-caption"><span class="scope-dot"></span><span>獨立美股資料區</span></div></div>
+          <article class="rank-card">
+            <div class="rank-card-head"><div class="rank-title-group"><span class="rank-icon movers-icon">US</span><div><h3>按市值排序</h3><p>Yahoo Technology Sector 預設清單</p></div></div><span class="unit-chip">20 檔・USD</span></div>
+            <div class="table-wrap"><table><thead><tr><th class="rank-col">#</th><th>代碼</th><th>公司</th><th class="numeric">市值</th><th class="numeric">行情價格</th><th class="numeric">當日漲跌</th><th class="numeric">成交量（股）</th></tr></thead><tbody id="usTechRows"><tr><td colspan="7" class="empty-state">正在讀取 Yahoo 科技股資料…</td></tr></tbody></table></div>
+            <div class="card-foot"><span><span class="basis-subnote" id="usTechNote">美國 Technology sector；Yahoo 預設篩選包含股價高於 US$5。按市值排序，不按當日漲跌篩選。</span><span class="basis-subnote" id="usTechUpdatedAt">等待 Yahoo 行情</span><span class="basis-subnote" id="usTechStatus" role="status">Yahoo 行情尚未載入。</span></span><span id="usTechCount">—</span></div>
+          </article>
         </section>
 
         <section class="data-status" id="statusBox"><span class="status-indicator"></span><div class="status-copy"><strong id="statusTitle">連線官方資料</strong><p id="statusText">等待讀取最新市場資料快照。</p></div><button id="retryBtn" type="button">重新載入</button></section>
