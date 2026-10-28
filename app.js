@@ -183,7 +183,7 @@ function loadData({manual=false}={}){
   })().finally(()=>{loadPromise=null;});
   return loadPromise;
 }
-function setStatus(title,text,error=false){$('#statusTitle').textContent=title;$('#statusText').textContent=`${text} ${freshnessNote()}`;$('#statusBox').classList.toggle('error',error);}
+function setStatus(title,text,error=false){if(!$('#statusBox')){if(error)console.warn(title,text);return;}$('#statusTitle').textContent=title;$('#statusText').textContent=`${text} ${freshnessNote()}`;$('#statusBox').classList.toggle('error',error);}
 function visibleRows(){
   if(state.market==='all') return state.rows;
   const key=state.market;
@@ -237,7 +237,7 @@ function sessionCopy(){
 document.querySelectorAll('.session-tab').forEach(b=>b.addEventListener('click',()=>{state.session=b.dataset.session;document.querySelectorAll('.session-tab').forEach(t=>{t.classList.toggle('selected',t===b);t.setAttribute('aria-selected',t===b?'true':'false');});sessionCopy();}));
 document.querySelectorAll('[data-market]').forEach(b=>b.addEventListener('click',()=>{state.market=b.dataset.market;document.querySelectorAll('[data-market]').forEach(x=>x.classList.toggle('active',x===b));render();sessionCopy();}));
 document.querySelectorAll('[data-direction]').forEach(b=>b.addEventListener('click',()=>{state.direction=b.dataset.direction;document.querySelectorAll('[data-direction]').forEach(x=>x.classList.toggle('active',x===b));render();}));
-$('#refreshBtn').addEventListener('click',()=>loadData({manual:true}));$('#retryBtn').addEventListener('click',()=>loadData({manual:true}));$('#todayBtn').addEventListener('click',()=>loadData({manual:true}));
+$('#refreshBtn').addEventListener('click',()=>loadData({manual:true}));$('#todayBtn').addEventListener('click',()=>loadData({manual:true}));
 $('#usTechRefreshBtn').addEventListener('click',async(event)=>{const button=event.currentTarget;if(button.disabled)return;button.disabled=true;button.textContent='更新中…';try{await refreshUSTech();}finally{button.disabled=false;button.textContent='↻ 重新載入';}});
 $('#report-date').addEventListener('change',()=>{const v=$('#report-date').value;if(v){const current=formatDate(state.stamp);setStatus('\u65e5\u671f\u9078\u64c7\u63d0\u793a',`\u5b98\u65b9\u516c\u958b\u7aef\u9ede\u76ee\u524d\u63d0\u4f9b\u6700\u65b0\u65e5\u884c\u60c5\uff0c\u5c1a\u672a\u63d0\u4f9b\u6b64\u9801\u6b77\u53f2\u65e5\u671f\u56de\u67e5\uff1b\u5831\u8868\u4ecd\u986f\u793a\u4e0a\u5e02\u8cc7\u6599\u65e5\u671f\uff1a${current}\u3002`);}});
 function tick(){const d=taipeiNow();$('#clock').textContent=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} TST`;}
