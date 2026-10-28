@@ -136,3 +136,7 @@ td{color:#e6e0ef}
 .sidebar-divider,.sidebar-source{border-color:#49385f}
 .nav-glyph{color:#d0c7df}
 .index-updated{color:#d0c7df}
+.summary-overview{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:390px){.summary-overview .summary-card:first-child{grid-column:auto}}
+.summary-foot .pct{font-size:14px;font-weight:600;line-height:1.3}
+@media(max-width:650px){.summary-foot .pct{font-size:12px}}

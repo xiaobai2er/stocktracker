@@ -206,14 +206,13 @@ function render(){
   const vols=[...rows].sort((a,b)=>b.volume-a.volume).slice(0,5);
   const movers=[...rows].filter(x=>x.pct!==null&&Number.isFinite(x.pct)).sort((a,b)=>state.direction==='up'?b.pct-a.pct:a.pct-b.pct).slice(0,5);
   const scopeName={all:'全部市場',listed:'上市',otc:'上櫃',emerging:'興櫃'}[state.market];
-  $('#summaryUniverse').textContent=fmt.format(rows.filter(x=>x.yahooAvailable).length);
   $('#volumeUnit').textContent='張・興櫃以股數換算';
   $('#volumeDescription').textContent='依成交股數由高至低';
   $('#volumeColumnLabel').textContent='官方成交量';
   $('#changeVolumeColumnLabel').textContent='官方成交量';
   $('#volumeFootnote').textContent='成交量以股數除以 1,000 換算為張';
   $('#marketQuoteNote').textContent='TWSE／TPEx Yahoo 報價約延遲 20 分鐘；Yahoo 缺漏時回退官方日價，表格會標示來源。';
-  $('#summaryScope').textContent=scopeName;$('#scopeCaption').textContent=scopeName;
+  $('#scopeCaption').textContent=scopeName;
   const volumeLeader=vols[0];
   const gainLeader=movers[0];
   $('#summaryVolumeName').textContent=volumeLeader?volumeLeader.name:'—';
