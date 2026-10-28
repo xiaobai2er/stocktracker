@@ -118,3 +118,6 @@ td{color:#ddd5ed}
 #usTechRows .stock-name{display:block}
 #usTechRows .price-source{font-size:12px}
 @media(max-width:650px){.us-tech-section .table-wrap table{min-width:820px}.us-tech-section .card-foot{align-items:flex-start}}
+
+.index-grid{margin:10px 0 6px}.index-updated{margin:0 2px 18px;color:#9aa69f;font:10px 'Noto Sans TC',sans-serif}
+

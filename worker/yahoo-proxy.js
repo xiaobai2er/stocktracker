@@ -7,6 +7,7 @@ const CACHE_SECONDS = 120;
 const US_CACHE_SECONDS = 60;
 const US_TECH_SCREEN_COUNT = 20;
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130 Safari/537.36';
+const EXTRA_SYMBOLS = new Set(['^IXIC', '^GSPC', 'SOXX']);
 
 function corsHeaders(origin) {
   return {
@@ -183,8 +184,8 @@ export default {
     }
     if (url.pathname.replace(/\/$/, '') !== '/quotes') return response({ error: 'Use /quotes?symbols=...' }, 404, request, env);
     const symbols = [...new Set((url.searchParams.get('symbols') || '').split(',').map(x => x.trim().toUpperCase()).filter(Boolean))];
-    if (!symbols.length || symbols.length > MAX_SYMBOLS || symbols.some(x => !/^[A-Z0-9]{2,8}\.(TW|TWO)$/.test(x))) {
-      return response({ error: `Provide 1-${MAX_SYMBOLS} valid .TW/.TWO symbols` }, 400, request, env);
+    if (!symbols.length || symbols.length > MAX_SYMBOLS || symbols.some(x => !(/^[A-Z0-9]{2,8}\.(TW|TWO)$/.test(x) || EXTRA_SYMBOLS.has(x)))) {
+      return response({ error: `Provide 1-${MAX_SYMBOLS} valid .TW/.TWO symbols or supported market symbols` }, 400, request, env);
     }
 
     const cacheKey = new Request(`${url.origin}/_cache/quotes/${encodeURIComponent(symbols.join(','))}`);

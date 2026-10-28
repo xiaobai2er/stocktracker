@@ -67,7 +67,7 @@ function applyYahooQuotes(quotes){
 async function refreshWorkerQuotes(){
   const base=String(window.STOCKTRACKER_YAHOO_WORKER_URL||'').trim();
   if(!base||!state.fetchedAt||workerQuotePromise)return workerQuotePromise;
-  const symbols=[...new Set(Object.values(state.sourceRows).flat().map(quoteSymbol))];
+  const symbols=[...new Set([...Object.values(state.sourceRows).flat().map(quoteSymbol),'^IXIC','^GSPC','SOXX'])];
   if(!symbols.length)return;
   workerQuotePromise=(async()=>{
     const fresh={};
@@ -78,6 +78,7 @@ async function refreshWorkerQuotes(){
       for(const quote of result.quotes){if(quote?.symbol)fresh[quote.symbol]=quote;}
     }
     if(Object.keys(fresh).length){
+      renderMarketIndices(fresh);
       applyYahooQuotes({...state.yahooQuotes,...fresh});render();
       const count=Object.values(state.sourceRows).flat().filter(row=>row.yahooAvailable).length;
       setStatus('Yahoo 延遲報價已更新',`${count.toLocaleString()} 檔取得 Yahoo 報價；未取得報價的個股仍顯示官方日行情作為參考。`);
@@ -118,6 +119,20 @@ async function refreshUSTech(){
   }).finally(()=>{usTechPromise=null;});
   return usTechPromise;
 }
+function renderMarketIndices(quotes){
+  const items=[['^IXIC','indexNasdaq','indexNasdaqMove','indexNasdaqChange'],['^GSPC','indexSp500','indexSp500Move','indexSp500Change'],['SOXX','indexSoxx','indexSoxxMove','indexSoxxChange']];
+  for(const [symbol,valueId,moveId,changeId] of items){
+    const q=quotes[symbol];
+    document.getElementById(valueId).textContent=q&&Number.isFinite(num(q.price))?new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(num(q.price)):'\u66ab\u7121\u5831\u50f9';
+    const move=document.getElementById(moveId), percent=document.getElementById(changeId), change=num(q?.change), pctValue=num(q?.changePercent);
+    move.textContent=change!==null?`${change>0?'+':''}${new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(change)}`:'\u2014';
+    move.className=`pct ${change>0?'up':change<0?'down':'flat'}`;
+    percent.textContent=pctValue!==null?`${pctValue>0?'+':''}${pctValue.toFixed(2)}%`:'\u2014';
+    percent.className=`pct ${pctValue>0?'up':pctValue<0?'down':'flat'}`;
+  }
+  const times=items.map(([symbol])=>num(quotes[symbol]?.marketTime)).filter(Boolean);
+  document.getElementById('indicesUpdated').textContent=times.length?`Yahoo Finance \u884c\u60c5\uff1b\u6700\u65b0\u5831\u50f9\u6642\u9593 ${taipeiTime(new Date(Math.max(...times)*1000).toISOString())}\uff08\u53f0\u5317\u6642\u9593\uff09\uff0c\u7f8e\u80a1\u884c\u60c5\u53ef\u80fd\u5ef6\u9072\u3002`:'Yahoo Finance \u884c\u60c5\uff0c\u53ef\u80fd\u5ef6\u9072\u3002';
+}
 function loadData({manual=false}={}){
   if(loadPromise) return loadPromise;
   const showSpinner=manual||!state.fetchedAt;
@@ -145,6 +160,7 @@ function loadData({manual=false}={}){
     state.yahooFetchedAt=snapshot.yahooFetchedAt||null;
     state.sourceRows={listed:twseRows,otc:tpexRows,emerging:emergingRows};
     applyYahooQuotes(snapshot.yahooQuotes&&typeof snapshot.yahooQuotes==='object'?snapshot.yahooQuotes:{});
+    renderMarketIndices(snapshot.yahooQuotes||{});
     state.dates={listed:[...new Set(twseRows.map(x=>dateKey(x.date)).filter(Boolean))].sort(),otc:[...new Set(tpexRows.map(x=>dateKey(x.date)).filter(Boolean))].sort(),emerging:[...new Set(emergingRows.map(x=>dateKey(x.date)).filter(Boolean))].sort()};
     const shared=state.dates.listed.filter(d=>state.dates.otc.includes(d)&&state.dates.emerging.includes(d)).sort();
     state.commonDate=shared.length>0;
@@ -210,7 +226,7 @@ function render(){
   const max=Math.max(1,...movers.map(x=>Math.abs(x.pct)));
   $('#changeRows').innerHTML=movers.length?movers.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td>${price(x)}</td><td><div class="bar-cell"><span class="mini-bar"><i style="width:${Math.max(5,Math.abs(x.pct)/max*100)}%"></i></span>${pctWithSource(x)}</div></td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td></tr>`).join(''):empty(5);
   $('#volumeCount').textContent=vols.length?`${vols.length} 檔`:'—';$('#changeCount').textContent=movers.length?`${movers.length} 檔`:'—';
-  $('#changeFoot').textContent=state.direction==='up'?'依漲幅由高至低':'依跌幅由深至淺';
+  $('#changeFoot').textContent=state.direction==='up'?'\u4f9d\u6f32\u5e45\u7531\u9ad8\u81f3\u4f4e':'\u4f9d\u8dcc\u5e45\u7531\u6df1\u81f3\u6dfa';
   const yahooCount=rows.filter(x=>x.yahooAvailable).length;
   $('#priceBasisLabel').textContent=yahooCount===rows.length&&rows.length?'價格與漲跌幅皆採 Yahoo Finance 報價':'Yahoo 報價優先；缺漏時保留官方日價格與漲跌幅，排行為混合來源';
 }
