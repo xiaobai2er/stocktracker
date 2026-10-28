@@ -111,6 +111,7 @@ body{background:#090711;color:#f6f1ff}
 td{color:#ddd5ed}
 
 .us-tech-section{margin-top:24px}
+#priceBasisLabel,#marketQuoteNote{display:none!important}
 .sidebar-date .us-tech-refresh{display:block;width:100%;margin-top:10px;appearance:none;-webkit-appearance:none;border:1px solid #49385f;border-radius:6px;background:#211738;color:#ddd5ed;padding:7px 9px;text-align:left;font:600 16.33px 'Noto Sans TC',sans-serif;line-height:1.5;cursor:pointer;transition:background .15s,border-color .15s}
 .sidebar-date .us-tech-refresh:hover:not(:disabled){background:#30204b;border-color:#8b5cf6;color:#fff}
 .sidebar-date .us-tech-refresh:disabled{opacity:.72;cursor:wait}
@@ -170,4 +171,15 @@ table thead th{background-color:#211738!important;color:#f6f1ff!important;border
 .market-theme strong{display:block;color:#f0eaff;font:600 16px 'Noto Sans TC',sans-serif}
 .market-theme p{margin:5px 0 0;color:#c2b8d4;font:14px/1.7 'Noto Sans TC',sans-serif}
 .market-insight-card .card-foot{border-color:#342748;color:#d0c7df}
+.flow-out-block{margin:10px 0 2px;padding-top:10px;border-top:1px solid #342748}
+.flow-out-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.flow-out-heading strong{color:#f0eaff;font:600 15px 'Noto Sans TC',sans-serif}
+.flow-out-heading span,.flow-out-note{color:#c2b8d4;font:12px 'Noto Sans TC',sans-serif}
+.flow-out-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #342748}
+.flow-out-rank{color:#a89dbb;font:12px 'DM Mono',monospace}
+.flow-out-name b{display:block;color:#f0eaff;font:500 14px 'Noto Sans TC',sans-serif}
+.flow-out-name small{display:block;color:#c2b8d4;font:11px 'Noto Sans TC',sans-serif}
+.flow-out-row>strong{color:#ff6682;font:600 14px 'DM Mono','Noto Sans TC',sans-serif}
+.flow-out-empty{margin:8px 0;color:#c2b8d4;font:13px 'Noto Sans TC',sans-serif}
+.flow-out-note{margin:7px 0 0;font-size:10px}.flow-out-note a{color:#2ee9ff}
 @media(max-width:650px){.market-insight-content{padding:2px 12px 7px}.market-theme{padding:9px 0}.market-theme strong{font-size:15px}.market-theme p{font-size:13px}}

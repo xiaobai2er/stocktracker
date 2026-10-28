@@ -1,5 +1,6 @@
 const API = 'https://query1.finance.yahoo.com/v8/finance/spark';
 const US_SCREENER_API = 'https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved';
+const FLOW_API = 'https://stonk.ifan.tw/api/state';
 const US_TECH_SCREEN_ID = 'sec-ind_sec-largest-equities_technology';
 const MAX_SYMBOLS = 100;
 const SPARK_SYMBOLS = 20;
@@ -156,6 +157,24 @@ async function fetchUSTechPayload() {
   };
 }
 
+async function fetchOutflowPayload() {
+  const upstream = await fetch(FLOW_API, {
+    headers: { 'Accept': 'application/json' },
+    signal: AbortSignal.timeout(10000)
+  });
+  if (!upstream.ok) throw new Error(`Market flow source HTTP ${upstream.status}`);
+  const payload = await upstream.json();
+  const flow = payload?.flow;
+  if (!Array.isArray(flow?.top_out)) throw new Error('Market flow source returned no outflow rows');
+  return {
+    stocks: flow.top_out.filter(row => Number.isFinite(row?.flow) && row.flow < 0).slice(0, 10),
+    updatedAt: flow.last_update,
+    marketOpen: Boolean(flow.market_open),
+    source: 'STONK / IFAN',
+    methodology: 'Intraday turnover increments weighted by price direction; an estimate, not actual institutional flow'
+  };
+}
+
 export default {
   async fetch(request, env, ctx) {
     const allowedOrigin = env.ALLOWED_ORIGIN || '*';
@@ -166,6 +185,13 @@ export default {
     if (unauthorized(request, env)) return response({ error: 'Unauthorized' }, 401, request, env);
 
     const url = new URL(request.url);
+    if (url.pathname.replace(/\/$/, '') === '/flow') {
+      try {
+        return response(await fetchOutflowPayload(), 200, request, env, 'public, max-age=15');
+      } catch (error) {
+        return response({ error: String(error.message || error), stocks: [] }, 502, request, env);
+      }
+    }
     if (url.pathname.replace(/\/$/, '') === '/us-tech') {
       const forceRefresh = url.searchParams.get('refresh') === '1';
       const cacheKey = new Request(`${url.origin}/_cache/us-tech-v1`);

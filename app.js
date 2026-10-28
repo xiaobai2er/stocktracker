@@ -1,5 +1,5 @@
 const $ = (s) => document.querySelector(s);
-const state = { rows: [], sourceRows: { listed: [], otc: [], emerging: [] }, dates: { listed: [], otc: [], emerging: [] }, yahooQuotes: {}, yahooError: null, yahooFetchedAt: null, usTechRows: [], usFetchedAt: null, usMarketTime: null, usMarketState: null, usDelayMin: null, usDelayMax: null, usError: null, market: 'all', direction: 'up', session: 'post', stamp: null, commonDate: false, fetchedAt: null, lastSuccessAt: null };
+const state = { rows: [], sourceRows: { listed: [], otc: [], emerging: [] }, dates: { listed: [], otc: [], emerging: [] }, yahooQuotes: {}, yahooError: null, yahooFetchedAt: null, usTechRows: [], usFetchedAt: null, usMarketTime: null, usMarketState: null, usDelayMin: null, usDelayMax: null, usError: null, flowOutRows: [], flowOutUpdatedAt: null, flowMarketOpen: false, market: 'all', direction: 'up', session: 'post', stamp: null, commonDate: false, fetchedAt: null, lastSuccessAt: null };
 const fmt = new Intl.NumberFormat('zh-TW');
 let loadPromise = null;
 let workerQuotePromise = null;
@@ -61,8 +61,7 @@ function applyYahooQuotes(quotes){
   }
   const times=Object.values(state.yahooQuotes).map(q=>num(q?.marketTime)).filter(Boolean);
   const latest=times.length?Math.max(...times):null;
-  const count=Object.values(state.sourceRows).flat().filter(row=>row.yahooAvailable).length;
-  $('#quoteUpdateTime').textContent=latest?`Yahoo 最新報價時間：${taipeiTime(new Date(latest*1000).toISOString())}（台北）；${count.toLocaleString()} 檔成功`:'Yahoo 報價未取得；目前保留官方最新日價格與漲跌幅';
+  $('#quoteUpdateTime').textContent=latest?`Yahoo 約延遲 20 分鐘・更新 ${taipeiTime(new Date(latest*1000).toISOString())}`:'Yahoo 報價暫不可用・顯示官方日行情';
 }
 async function refreshWorkerQuotes(){
   const base=String(window.STOCKTRACKER_YAHOO_WORKER_URL||'').trim();
@@ -117,6 +116,27 @@ async function refreshUSTech({force=false}={}){
     $('#usTechStatus').textContent=`Yahoo 科技股資料暫時無法取得：${error.message}。保留上次成功資料，稍後重試。`;
   }).finally(()=>{usTechPromise=null;});
   return usTechPromise;
+}
+async function refreshFlowOutflows(){
+  const base=String(window.STOCKTRACKER_YAHOO_WORKER_URL||'').trim();
+  if(!base)return;
+  try{
+    const url=new URL(base,location.href);url.pathname=url.pathname.replace(/\/quotes\/?$/,'/flow');
+    const result=await fetchJson(url.href);
+    if(!Array.isArray(result.stocks)||!result.updatedAt)throw new Error(result.error||'資金流出資料格式不正確');
+    state.flowOutRows=result.stocks.filter(x=>num(x.flow)<0).sort((a,b)=>num(a.flow)-num(b.flow)).slice(0,5);
+    state.flowOutUpdatedAt=num(result.updatedAt);state.flowMarketOpen=Boolean(result.marketOpen);
+    renderFlowOutflows();
+  }catch(error){
+    $('#flowOutStatus').textContent='資料暫不可用';
+    $('#flowOutRows').innerHTML='<p class="flow-out-empty">流出排行目前無法載入</p>';
+    console.warn('Intraday outflow estimate unavailable.',error);
+  }
+}
+function renderFlowOutflows(){
+  const stamp=state.flowOutUpdatedAt?new Date(state.flowOutUpdatedAt*1000).toISOString():null;
+  $('#flowOutStatus').textContent=`${state.flowMarketOpen?'盤中估算':'最近盤中估算'}${stamp?'・'+taipeiTime(stamp):''}`;
+  $('#flowOutRows').innerHTML=state.flowOutRows.length?state.flowOutRows.map((row,index)=>`<div class="flow-out-row"><span class="flow-out-rank">${String(index+1).padStart(2,'0')}</span><span class="flow-out-name"><b>${escapeHtml(row.symbol)} ${escapeHtml(row.name)}</b><small>${escapeHtml(row.sector||'')}</small></span><strong>−${(Math.abs(num(row.flow))/1e8).toFixed(1)} 億</strong></div>`).join(''):'<p class="flow-out-empty">目前沒有盤中流出資料</p>';
 }
 function renderMarketIndices(quotes){
   const items=[['^IXIC','indexNasdaq','indexNasdaqMove','indexNasdaqChange'],['^GSPC','indexSp500','indexSp500Move','indexSp500Change'],['SOXX','indexSoxx','indexSoxxMove','indexSoxxChange']];
@@ -206,7 +226,7 @@ function render(){
   $('#volumeUnit').textContent='\u4e0a\u5e02\u6210\u4ea4\u91cf\uff08\u5f35\uff09';
   $('#volumeDescription').textContent='依成交股數由高至低';
   $('#volumeColumnLabel').textContent='官方成交量';
-  $('#volumeFootnote').textContent='成交量以股數除以 1,000 換算為張';
+  $('#volumeFootnote').textContent='成交量：張（股數÷1,000）・價格/漲跌幅：Yahoo';
   $('#marketQuoteNote').textContent='TWSE Yahoo \u5831\u50f9\u7d04\u5ef6\u9072 20 \u5206\u9418\uff1bYahoo \u7f3a\u6f0f\u6642\u56de\u9000\u5b98\u65b9\u65e5\u50f9\uff0c\u8868\u683c\u6703\u6a19\u793a\u4f86\u6e90\u3002';
   $('#scopeCaption').textContent=scopeName;
   const volumeLeader=vols[0];
@@ -242,4 +262,4 @@ $('#refreshBtn').addEventListener('click',()=>loadData({manual:true}));$('#today
 $('#usTechRefreshBtn').addEventListener('click',async(event)=>{const button=event.currentTarget;if(button.disabled)return;button.disabled=true;button.textContent='更新中…';try{await refreshUSTech({force:true});}finally{button.disabled=false;button.textContent='↻ 重新載入美股';}});
 $('#report-date').addEventListener('change',()=>{const v=$('#report-date').value;if(v){const current=formatDate(state.stamp);setStatus('\u65e5\u671f\u9078\u64c7\u63d0\u793a',`\u5b98\u65b9\u516c\u958b\u7aef\u9ede\u76ee\u524d\u63d0\u4f9b\u6700\u65b0\u65e5\u884c\u60c5\uff0c\u5c1a\u672a\u63d0\u4f9b\u6b64\u9801\u6b77\u53f2\u65e5\u671f\u56de\u67e5\uff1b\u5831\u8868\u4ecd\u986f\u793a\u4e0a\u5e02\u8cc7\u6599\u65e5\u671f\uff1a${current}\u3002`);}});
 function tick(){const d=taipeiNow();$('#clock').textContent=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} TST`;}
-tick();setInterval(tick,30000);sessionCopy();const d=taipeiNow();$('#report-date').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;loadData();void refreshUSTech();setInterval(()=>{void loadData();void refreshUSTech();},60000);
+tick();setInterval(tick,30000);sessionCopy();const d=taipeiNow();$('#report-date').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;loadData();void refreshUSTech();void refreshFlowOutflows();setInterval(()=>{void loadData();void refreshUSTech();void refreshFlowOutflows();},60000);
