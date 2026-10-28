@@ -103,7 +103,7 @@ async function refreshUSTech(){
       marketCap:num(q.marketCap),close:num(q.price),change:num(q.change),pct:num(q.changePercent),volume:num(q.volume),
       yahooAvailable:true,quoteTime:num(q.marketTime),delayedMinutes:num(q.delayedMinutes),marketState:String(q.marketState||''),currency:'USD'
     })).filter(row=>row.code&&row.marketCap!==null&&row.close!==null&&row.pct!==null)
-      .sort((a,b)=>b.marketCap-a.marketCap).slice(0,20);
+      .sort((a,b)=>b.marketCap-a.marketCap).slice(0,5);
     state.usFetchedAt=result.fetchedAt;state.usMarketTime=num(result.marketTime);state.usMarketState=state.usTechRows.map(row=>row.marketState).find(Boolean)||null;
     state.usDelayMin=num(result.delayMin);state.usDelayMax=num(result.delayMax);state.usError=null;
     renderUSTech();
