@@ -19,10 +19,7 @@
       </a>
       <div class="sidebar-section-label">市場範圍 <span>MARKETS</span></div>
       <nav class="market-nav" aria-label="選擇市場">
-        <button class="market-link active" data-market="all" type="button"><span class="nav-glyph all-glyph">▤</span><span>全部市場</span><span class="nav-count">3</span></button>
-        <button class="market-link" data-market="listed" type="button"><span class="nav-glyph">01</span><span>上市</span></button>
-        <button class="market-link" data-market="otc" type="button"><span class="nav-glyph">02</span><span>上櫃</span></button>
-        <button class="market-link" data-market="emerging" type="button"><span class="nav-glyph">03</span><span>興櫃</span></button>
+        <button class="market-link active" data-market="all" type="button"><span class="nav-glyph all-glyph">▤</span><span>上市市場</span><span class="nav-count">1</span></button>
       </nav>
       <div class="sidebar-divider"></div>
       <div class="sidebar-section-label">報表設定 <span>REPORT</span></div>
@@ -33,7 +30,7 @@
       </div>
       <div class="sidebar-bottom">
         <div class="market-clock"><span class="clock-dot"></span><span>台北時間</span><strong id="clock">--:--</strong></div>
-        <div class="sidebar-source"><span class="source-mark">◎</span><div><strong id="sidebarSourceTitle">官方市場資料</strong><small id="sidebarSourceDetail">TWSE ・ TPEx</small></div></div>
+        <div class="sidebar-source"><span class="source-mark">◎</span><div><strong id="sidebarSourceTitle">官方市場資料</strong><small id="sidebarSourceDetail">TWSE</small></div></div>
         <div class="sidebar-version">MARKET BRIEF <span>v1.0</span></div>
       </div>
     </aside>
@@ -65,17 +62,17 @@
         </section>
 
         <section class="ranking-section">
-          <div class="section-title-row"><div><p class="overline"><span></span> MARKET LEADERS</p><h2>市場排行</h2></div><div class="scope-caption"><span class="scope-dot"></span><span id="scopeCaption">全部市場</span></div></div>
+          <div class="section-title-row"><div><p class="overline"><span></span> MARKET LEADERS</p><h2>市場排行</h2></div><div class="scope-caption"><span class="scope-dot"></span><span id="scopeCaption">上市市場</span></div></div>
           <div class="rank-grid">
             <article class="rank-card">
-              <div class="rank-card-head"><div class="rank-title-group"><span class="rank-icon volume-icon">▥</span><div><h3>成交量排行</h3><p id="volumeDescription">依成交股數由高至低</p></div></div><span class="unit-chip" id="volumeUnit">張・興櫃以股數換算</span></div>
+              <div class="rank-card-head"><div class="rank-title-group"><span class="rank-icon volume-icon">▥</span><div><h3>成交量排行</h3><p id="volumeDescription">依成交股數由高至低</p></div></div><span class="unit-chip" id="volumeUnit">&#19978;&#24066;&#25104;&#20132;&#37327;&#65288;&#24373;&#65289;</span></div>
               <div class="table-wrap"><table><thead><tr><th class="rank-col">#</th><th>股票</th><th class="numeric" id="volumeColumnLabel">官方成交量</th><th class="numeric">行情價格</th><th class="numeric">漲跌幅</th></tr></thead><tbody id="volumeRows"><tr><td colspan="5" class="empty-state">正在讀取官方行情快照…</td></tr></tbody></table></div>
               <div class="card-foot"><span id="volumeFootnote">成交量以股數除以 1,000 換算為張</span><span id="volumeCount">—</span></div>
             </article>
             <article class="rank-card">
               <div class="rank-card-head"><div class="rank-title-group"><span class="rank-icon movers-icon">↗</span><div><h3>漲跌幅排行</h3><p id="changeFoot">依漲幅由高至低</p></div></div><div class="direction-toggle" role="group" aria-label="漲跌方向"><button class="active" data-direction="up" type="button">漲幅</button><button data-direction="down" type="button">跌幅</button></div></div>
               <div class="table-wrap"><table><thead><tr><th class="rank-col">#</th><th>股票</th><th class="numeric">行情價格</th><th class="numeric">漲跌幅</th><th class="numeric" id="changeVolumeColumnLabel">官方成交量</th></tr></thead><tbody id="changeRows"><tr><td colspan="5" class="empty-state">正在讀取官方行情快照…</td></tr></tbody></table></div>
-              <div class="card-foot"><span><span id="priceBasisLabel">Yahoo Finance 延遲行情</span><span class="basis-subnote" id="marketQuoteNote">TWSE／TPEx Yahoo 約延遲 20 分鐘；Yahoo 缺漏時回退官方收盤價／興櫃日均價，各列會標示來源</span><span class="basis-subnote" id="quoteUpdateTime">行情時間依 Yahoo 最新可用資料</span></span><span id="changeCount">—</span></div>
+              <div class="card-foot"><span><span id="priceBasisLabel">Yahoo Finance 延遲行情</span><span class="basis-subnote" id="marketQuoteNote">TWSE Yahoo 約延遲 20 分鐘；Yahoo 缺漏時回退官方收盤價，各列會標示來源</span><span class="basis-subnote" id="quoteUpdateTime">行情時間依 Yahoo 最新可用資料</span></span><span id="changeCount">—</span></div>
             </article>
           </div>
         </section>
@@ -100,7 +97,7 @@
         </section>
 
         <section class="data-status" id="statusBox"><span class="status-indicator"></span><div class="status-copy"><strong id="statusTitle">連線官方資料</strong><p id="statusText">等待讀取最新市場資料快照。</p></div><button id="retryBtn" type="button">重新載入</button></section>
-        <footer class="page-footer"><span>成交量：TWSE／TPEx 官方日資料 ・ 價格/漲跌幅：Yahoo Finance 延遲行情</span><span>市場觀察，僅供資訊參考</span></footer>
+        <footer class="page-footer"><span>成交量：TWSE 官方日資料 ・ 價格/漲跌幅：Yahoo Finance 延遲行情</span><span>市場觀察，僅供資訊參考</span></footer>
       </div>
     </main>
   </div>

@@ -138,7 +138,7 @@ function loadData({manual=false}={}){
   const showSpinner=manual||!state.fetchedAt;
   if(showSpinner){document.body.classList.add('loading');$('#refreshBtn').disabled=true;}
   if(manual)setStatus('正在檢查最新已部署快照',`手動重新載入會重讀同源資料快照。${state.lastSuccessAt?`上次成功檢查：${taipeiTime(state.lastSuccessAt)}。`:''}`);
-  else if(!state.fetchedAt)setStatus('正在讀取官方資料快照','載入 TWSE、TPEx 股票與期交所每日行情…');
+  else if(!state.fetchedAt)setStatus('\u6b63\u5728\u8b80\u53d6\u4e0a\u5e02\u884c\u60c5','\u8f09\u5165 TWSE \u4e0a\u5e02\u80a1\u7968\u65e5\u884c\u884c\u60c5...');
   loadPromise=(async()=>{
   try{
     const snapshot=await fetchJson(`./data/market.json?check=${Date.now()}`);
@@ -155,26 +155,24 @@ function loadData({manual=false}={}){
     const twseRows=(Array.isArray(twse)?twse:[]).map(normalizeTwse).filter(Boolean);
     const tpexRows=(Array.isArray(tpex)?tpex:[]).map(normalizeTpex).filter(Boolean);
     const emergingRows=(Array.isArray(emerging)?emerging:[]).map(normalizeEmerging).filter(Boolean);
-    if(!twseRows.length&&!tpexRows.length&&!emergingRows.length) throw new Error('官方資料沒有可用的成交量及價格欄位');
+    if(!twseRows.length) throw new Error('官方資料沒有可用的成交量及價格欄位');
     state.yahooError=snapshot.yahooError||null;
     state.yahooFetchedAt=snapshot.yahooFetchedAt||null;
-    state.sourceRows={listed:twseRows,otc:tpexRows,emerging:emergingRows};
+    state.sourceRows={listed:twseRows,otc:[],emerging:[]};
     applyYahooQuotes(snapshot.yahooQuotes&&typeof snapshot.yahooQuotes==='object'?snapshot.yahooQuotes:{});
     renderMarketIndices(snapshot.yahooQuotes||{});
-    state.dates={listed:[...new Set(twseRows.map(x=>dateKey(x.date)).filter(Boolean))].sort(),otc:[...new Set(tpexRows.map(x=>dateKey(x.date)).filter(Boolean))].sort(),emerging:[...new Set(emergingRows.map(x=>dateKey(x.date)).filter(Boolean))].sort()};
-    const shared=state.dates.listed.filter(d=>state.dates.otc.includes(d)&&state.dates.emerging.includes(d)).sort();
-    state.commonDate=shared.length>0;
-    if(state.commonDate){state.stamp=shared.at(-1);state.rows=[...twseRows.filter(x=>dateKey(x.date)===state.stamp),...tpexRows.filter(x=>dateKey(x.date)===state.stamp),...emergingRows.filter(x=>dateKey(x.date)===state.stamp)];}
-    else {state.stamp='';state.rows=[...twseRows,...tpexRows,...emergingRows];}
+    state.dates={listed:[...new Set(twseRows.map(x=>dateKey(x.date)).filter(Boolean))].sort(),otc:[],emerging:[]};
+    state.commonDate=state.dates.listed.length>0;
+    state.stamp=state.dates.listed.at(-1)||'';
+    state.rows=twseRows.filter(x=>dateKey(x.date)===state.stamp);
     state.fetchedAt=String(snapshot.fetchedAt);state.lastSuccessAt=checkedAt;
     render();
-    const listedDate=state.dates.listed.at(-1)||'';const otcDate=state.dates.otc.at(-1)||'';const emergingDate=state.dates.emerging.at(-1)||'';
-    const dateText=state.commonDate?formatDate(state.stamp):`上市 ${formatDate(listedDate)}｜上櫃 ${formatDate(otcDate)}｜興櫃 ${formatDate(emergingDate)}`;
-    $('#reportDate').textContent=dateText; $('#sessionBadge').textContent=state.commonDate?'共同資料日':'市場資料日不同';
-    const dateNotice=state.commonDate?`共同資料日：${formatDate(state.stamp)}`:`三來源目前未齊於同一資料日；各市場分別使用自己的最新日行情（上市 ${formatDate(listedDate)}、上櫃 ${formatDate(otcDate)}、興櫃 ${formatDate(emergingDate)}），跨市場合併排名不可視為同一交易日比較。`;
-    setStatus('官方資料快照已載入',`${dateNotice} ・ 上市 ${twseRows.length.toLocaleString()} 檔、上櫃 ${tpexRows.length.toLocaleString()} 檔、興櫃 ${emergingRows.length.toLocaleString()} 檔 ・ 快照擷取 ${taipeiTime(state.fetchedAt)}；本頁成功檢查 ${taipeiTime(state.lastSuccessAt)}（台北）。`);
+    const listedDate=state.dates.listed.at(-1)||'';
+    $('#reportDate').textContent=formatDate(state.stamp); $('#sessionBadge').textContent=state.commonDate?'\u4e0a\u5e02\u884c\u60c5\u65e5':'\u7b49\u5f85\u884c\u60c5';
+    const dateNotice=`\u4e0a\u5e02\u80a1\u7968\u884c\u60c5\u65e5\u671f\uff1a${formatDate(listedDate)}`;
+    setStatus('\u4e0a\u5e02\u884c\u60c5\u5feb\u7167\u5df2\u8f09\u5165',`${dateNotice} \u30fb TWSE ${twseRows.length.toLocaleString()} \u6a94 \u30fb \u5feb\u7167\u64f7\u53d6 ${taipeiTime(state.fetchedAt)}\uff1b\u672c\u9801\u6210\u529f\u6aa2\u67e5 ${taipeiTime(state.lastSuccessAt)}\uff08\u53f0\u5317\uff09\u3002`);
     const yahooCount=Object.values(state.sourceRows).flat().filter(row=>row.yahooAvailable).length;
-    const yahooTotal=Number(snapshot.yahooSymbolCount)||0;
+    const yahooTotal=twseRows.length;
     if(state.yahooError||yahooCount===0)setStatus('Yahoo 個股報價目前不可用',`${state.yahooError||'尚未取得任何 Yahoo 報價。'}目前 Yahoo 報價 ${yahooCount.toLocaleString()}/${yahooTotal.toLocaleString()} 檔；畫面保留官方最新日收盤價／日均價與漲跌幅，並以官方成交量計算成交量排行。`,true);
     else if(yahooCount<yahooTotal)setStatus('Yahoo 個股報價部分可用',`目前取得 ${yahooCount.toLocaleString()}/${yahooTotal.toLocaleString()} 檔 Yahoo 報價；缺漏個股保留官方日行情，表格會標示各列資料來源。`,true);
     void refreshWorkerQuotes();
@@ -205,13 +203,13 @@ function render(){
   }
   const vols=[...rows].sort((a,b)=>b.volume-a.volume).slice(0,5);
   const movers=[...rows].filter(x=>x.pct!==null&&Number.isFinite(x.pct)).sort((a,b)=>state.direction==='up'?b.pct-a.pct:a.pct-b.pct).slice(0,5);
-  const scopeName={all:'全部市場',listed:'上市',otc:'上櫃',emerging:'興櫃'}[state.market];
-  $('#volumeUnit').textContent='張・興櫃以股數換算';
+  const scopeName='\u4e0a\u5e02\u5e02\u5834';
+  $('#volumeUnit').textContent='\u4e0a\u5e02\u6210\u4ea4\u91cf\uff08\u5f35\uff09';
   $('#volumeDescription').textContent='依成交股數由高至低';
   $('#volumeColumnLabel').textContent='官方成交量';
   $('#changeVolumeColumnLabel').textContent='官方成交量';
   $('#volumeFootnote').textContent='成交量以股數除以 1,000 換算為張';
-  $('#marketQuoteNote').textContent='TWSE／TPEx Yahoo 報價約延遲 20 分鐘；Yahoo 缺漏時回退官方日價，表格會標示來源。';
+  $('#marketQuoteNote').textContent='TWSE Yahoo \u5831\u50f9\u7d04\u5ef6\u9072 20 \u5206\u9418\uff1bYahoo \u7f3a\u6f0f\u6642\u56de\u9000\u5b98\u65b9\u65e5\u50f9\uff0c\u8868\u683c\u6703\u6a19\u793a\u4f86\u6e90\u3002';
   $('#scopeCaption').textContent=scopeName;
   const volumeLeader=vols[0];
   const gainLeader=movers[0];
@@ -246,6 +244,6 @@ document.querySelectorAll('.session-tab').forEach(b=>b.addEventListener('click',
 document.querySelectorAll('[data-market]').forEach(b=>b.addEventListener('click',()=>{state.market=b.dataset.market;document.querySelectorAll('[data-market]').forEach(x=>x.classList.toggle('active',x===b));render();sessionCopy();}));
 document.querySelectorAll('[data-direction]').forEach(b=>b.addEventListener('click',()=>{state.direction=b.dataset.direction;document.querySelectorAll('[data-direction]').forEach(x=>x.classList.toggle('active',x===b));render();}));
 $('#refreshBtn').addEventListener('click',()=>loadData({manual:true}));$('#retryBtn').addEventListener('click',()=>loadData({manual:true}));$('#todayBtn').addEventListener('click',()=>loadData({manual:true}));
-$('#report-date').addEventListener('change',()=>{const v=$('#report-date').value;if(v){const current=state.commonDate?formatDate(state.stamp):`上市 ${formatDate(state.dates.listed.at(-1))}、上櫃 ${formatDate(state.dates.otc.at(-1))}、興櫃 ${formatDate(state.dates.emerging.at(-1))}`;setStatus('日期選擇提示',`官方公開端點目前提供最新日行情，尚未提供此頁歷史日期回查；報表仍顯示來源最新資料日期：${current}。`);}});
+$('#report-date').addEventListener('change',()=>{const v=$('#report-date').value;if(v){const current=formatDate(state.stamp);setStatus('\u65e5\u671f\u9078\u64c7\u63d0\u793a',`\u5b98\u65b9\u516c\u958b\u7aef\u9ede\u76ee\u524d\u63d0\u4f9b\u6700\u65b0\u65e5\u884c\u60c5\uff0c\u5c1a\u672a\u63d0\u4f9b\u6b64\u9801\u6b77\u53f2\u65e5\u671f\u56de\u67e5\uff1b\u5831\u8868\u4ecd\u986f\u793a\u4e0a\u5e02\u8cc7\u6599\u65e5\u671f\uff1a${current}\u3002`);}});
 function tick(){const d=taipeiNow();$('#clock').textContent=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} TST`;}
 tick();setInterval(tick,30000);sessionCopy();const d=taipeiNow();$('#report-date').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;loadData();void refreshUSTech();setInterval(()=>{void loadData();void refreshUSTech();},60000);
