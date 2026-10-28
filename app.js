@@ -88,11 +88,12 @@ async function refreshWorkerQuotes(){
   return workerQuotePromise;
 }
 let usTechPromise = null;
-async function refreshUSTech(){
+async function refreshUSTech({force=false}={}){
   const base=String(window.STOCKTRACKER_YAHOO_WORKER_URL||'').trim();
-  if(!base||usTechPromise)return usTechPromise;
+  if(!base)return;
+  if(usTechPromise){await usTechPromise;if(!force)return;}
   usTechPromise=(async()=>{
-    const url=new URL(base,location.href);url.pathname=url.pathname.replace(/\/quotes\/?$/,'/us-tech');
+    const url=new URL(base,location.href);url.pathname=url.pathname.replace(/\/quotes\/?$/,'/us-tech');if(force)url.searchParams.set('refresh','1');
     const result=await fetchJson(url.href);
     if(!Array.isArray(result.stocks)||!result.fetchedAt)throw new Error(result.error||'Yahoo technology screener response is invalid');
     if(result.fetchedAt===state.usFetchedAt)return;
@@ -238,7 +239,7 @@ document.querySelectorAll('.session-tab').forEach(b=>b.addEventListener('click',
 document.querySelectorAll('[data-market]').forEach(b=>b.addEventListener('click',()=>{state.market=b.dataset.market;document.querySelectorAll('[data-market]').forEach(x=>x.classList.toggle('active',x===b));render();sessionCopy();}));
 document.querySelectorAll('[data-direction]').forEach(b=>b.addEventListener('click',()=>{state.direction=b.dataset.direction;document.querySelectorAll('[data-direction]').forEach(x=>x.classList.toggle('active',x===b));render();}));
 $('#refreshBtn').addEventListener('click',()=>loadData({manual:true}));$('#todayBtn').addEventListener('click',()=>loadData({manual:true}));
-$('#usTechRefreshBtn').addEventListener('click',async(event)=>{const button=event.currentTarget;if(button.disabled)return;button.disabled=true;button.textContent='更新中…';try{await refreshUSTech();}finally{button.disabled=false;button.textContent='↻ 重新載入';}});
+$('#usTechRefreshBtn').addEventListener('click',async(event)=>{const button=event.currentTarget;if(button.disabled)return;button.disabled=true;button.textContent='更新中…';try{await refreshUSTech({force:true});}finally{button.disabled=false;button.textContent='↻ 重新載入美股';}});
 $('#report-date').addEventListener('change',()=>{const v=$('#report-date').value;if(v){const current=formatDate(state.stamp);setStatus('\u65e5\u671f\u9078\u64c7\u63d0\u793a',`\u5b98\u65b9\u516c\u958b\u7aef\u9ede\u76ee\u524d\u63d0\u4f9b\u6700\u65b0\u65e5\u884c\u60c5\uff0c\u5c1a\u672a\u63d0\u4f9b\u6b64\u9801\u6b77\u53f2\u65e5\u671f\u56de\u67e5\uff1b\u5831\u8868\u4ecd\u986f\u793a\u4e0a\u5e02\u8cc7\u6599\u65e5\u671f\uff1a${current}\u3002`);}});
 function tick(){const d=taipeiNow();$('#clock').textContent=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} TST`;}
 tick();setInterval(tick,30000);sessionCopy();const d=taipeiNow();$('#report-date').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;loadData();void refreshUSTech();setInterval(()=>{void loadData();void refreshUSTech();},60000);

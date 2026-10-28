@@ -167,10 +167,11 @@ export default {
 
     const url = new URL(request.url);
     if (url.pathname.replace(/\/$/, '') === '/us-tech') {
+      const forceRefresh = url.searchParams.get('refresh') === '1';
       const cacheKey = new Request(`${url.origin}/_cache/us-tech-v1`);
       const cache = caches.default;
       const cached = await cache.match(cacheKey);
-      if (cached) return response(await cached.json(), 200, request, env, `public, max-age=${US_CACHE_SECONDS}`);
+      if (cached && !forceRefresh) return response(await cached.json(), 200, request, env, `public, max-age=${US_CACHE_SECONDS}`);
       try {
         const payload = await fetchUSTechPayload();
         const cachedResponse = new Response(JSON.stringify(payload), {
