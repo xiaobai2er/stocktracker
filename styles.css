@@ -123,3 +123,16 @@ td{color:#ddd5ed}
 
 .index-grid .summary-value{font-size:32px;line-height:1.2;letter-spacing:-.035em;font-variant-numeric:tabular-nums}.index-grid .summary-foot{align-items:center;gap:12px;flex-wrap:wrap}.index-grid .summary-foot>span,.index-grid .summary-foot strong{font-size:15px;font-variant-numeric:tabular-nums}.index-grid .summary-foot strong{white-space:nowrap}.index-grid .summary-top{font-size:12px}.index-updated{font-size:11px}
 @media(max-width:650px){.index-grid .summary-value{font-size:25px}.index-grid .summary-foot{gap:7px}.index-grid .summary-foot>span,.index-grid .summary-foot strong{font-size:11px}.index-grid .summary-top{font-size:9px}.index-grid .summary-card{padding:10px 8px}}
+/* Dark theme contrast pass: keep supporting text readable without changing the palette. */
+:root{--muted:#c2b8d4;--muted-dark:#d0c7df;--line:#49385f}
+.sidebar-section-label,.brand-copy small,.sidebar-date label,.market-clock,.sidebar-source small,.sidebar-version,.overline,.top-date-label,.snapshot-status,.session-panel-title small,.session-tab small,.summary-top,.summary-foot,.rank-title-group p,.card-foot,.basis-subnote,.page-footer,.index-updated{color:#c2b8d4}
+.breadcrumb,.scope-caption,.session-tab,.market-link{color:#ddd5ed}
+.breadcrumb b,.top-divider{color:#c2b8d4}
+th{color:#d0c7df}
+td{color:#e6e0ef}
+.session-icon,.stock-market-tag{color:#e2d8f1}
+.stock-market-tag{background:#302443}
+.session-panel,.summary-card,.rank-card,.data-status{border-color:#49385f}
+.sidebar-divider,.sidebar-source{border-color:#49385f}
+.nav-glyph{color:#d0c7df}
+.index-updated{color:#d0c7df}
