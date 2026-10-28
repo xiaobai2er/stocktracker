@@ -207,7 +207,6 @@ function render(){
   $('#volumeUnit').textContent='\u4e0a\u5e02\u6210\u4ea4\u91cf\uff08\u5f35\uff09';
   $('#volumeDescription').textContent='依成交股數由高至低';
   $('#volumeColumnLabel').textContent='官方成交量';
-  $('#changeVolumeColumnLabel').textContent='官方成交量';
   $('#volumeFootnote').textContent='成交量以股數除以 1,000 換算為張';
   $('#marketQuoteNote').textContent='TWSE Yahoo \u5831\u50f9\u7d04\u5ef6\u9072 20 \u5206\u9418\uff1bYahoo \u7f3a\u6f0f\u6642\u56de\u9000\u5b98\u65b9\u65e5\u50f9\uff0c\u8868\u683c\u6703\u6a19\u793a\u4f86\u6e90\u3002';
   $('#scopeCaption').textContent=scopeName;
@@ -220,10 +219,7 @@ function render(){
   $('#summaryMoverCode').textContent=gainLeader?`${gainLeader.code} ・ ${{listed:'上市',otc:'上櫃',emerging:'興櫃'}[gainLeader.market]} ・ ${gainLeader.yahooAvailable?'Yahoo':'官方日資料'}`:'目前沒有有效漲跌幅';
   $('#summaryMoverValue').innerHTML=gainLeader?pct(gainLeader.pct):'—';
   $('#volumeRows').innerHTML=vols.length?vols.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td><td>${price(x)}</td><td>${pctWithSource(x)}</td></tr>`).join(''):empty(5);
-  const max=Math.max(1,...movers.map(x=>Math.abs(x.pct)));
-  $('#changeRows').innerHTML=movers.length?movers.map((x,i)=>`<tr><td><span class="rank-num ${i<3?'top-three':''}">${String(i+1).padStart(2,'0')}</span></td><td>${stock(x)}</td><td>${price(x)}</td><td><div class="bar-cell"><span class="mini-bar"><i style="width:${Math.max(5,Math.abs(x.pct)/max*100)}%"></i></span>${pctWithSource(x)}</div></td><td><span class="volume-value">${fmt.format(Math.round(x.volume))}</span></td></tr>`).join(''):empty(5);
-  $('#volumeCount').textContent=vols.length?`${vols.length} 檔`:'—';$('#changeCount').textContent=movers.length?`${movers.length} 檔`:'—';
-  $('#changeFoot').textContent=state.direction==='up'?'\u4f9d\u6f32\u5e45\u7531\u9ad8\u81f3\u4f4e':'\u4f9d\u8dcc\u5e45\u7531\u6df1\u81f3\u6dfa';
+  $('#volumeCount').textContent=vols.length?String(vols.length)+' \u6a94':'\u2014';
   const yahooCount=rows.filter(x=>x.yahooAvailable).length;
   $('#priceBasisLabel').textContent=yahooCount===rows.length&&rows.length?'價格與漲跌幅皆採 Yahoo Finance 報價':'Yahoo 報價優先；缺漏時保留官方日價格與漲跌幅，排行為混合來源';
 }
