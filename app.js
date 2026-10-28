@@ -136,7 +136,7 @@ async function refreshFlowOutflows(){
 function renderFlowOutflows(){
   const stamp=state.flowOutUpdatedAt?new Date(state.flowOutUpdatedAt*1000).toISOString():null;
   $('#flowOutStatus').textContent=`${state.flowMarketOpen?'盤中估算':'最近盤中估算'}${stamp?'・'+taipeiTime(stamp):''}`;
-  $('#flowOutRows').innerHTML=state.flowOutRows.length?state.flowOutRows.map((row,index)=>`<div class="flow-out-row"><span class="flow-out-rank">${String(index+1).padStart(2,'0')}</span><span class="flow-out-name"><b>${escapeHtml(row.symbol)} ${escapeHtml(row.name)}</b><small>${escapeHtml(row.sector||'')}</small></span><strong>−${(Math.abs(num(row.flow))/1e8).toFixed(1)} 億</strong></div>`).join(''):'<p class="flow-out-empty">目前沒有盤中流出資料</p>';
+  $('#flowOutRows').innerHTML=state.flowOutRows.length?`<div class="flow-out-columns"><span></span><span>股票</span><span>行情價格</span><span>漲跌幅</span><span>流出估算</span></div>${state.flowOutRows.map((row,index)=>`<div class="flow-out-row"><span class="flow-out-rank">${String(index+1).padStart(2,'0')}</span><span class="flow-out-name"><b>${escapeHtml(row.symbol)} ${escapeHtml(row.name)}</b><small>${escapeHtml(row.sector||'')}</small></span><span class="flow-out-price">${num(row.price)!==null?new Intl.NumberFormat('zh-TW',{minimumFractionDigits:2,maximumFractionDigits:2}).format(num(row.price)):'—'}</span><span class="flow-out-change">${pct(num(row.change_pct))}</span><strong>−${(Math.abs(num(row.flow))/1e8).toFixed(1)} 億</strong></div>`).join('')}`:'<p class="flow-out-empty">目前沒有盤中流出資料</p>';
 }
 function renderMarketIndices(quotes){
   const items=[['^IXIC','indexNasdaq','indexNasdaqMove','indexNasdaqChange'],['^GSPC','indexSp500','indexSp500Move','indexSp500Change'],['SOXX','indexSoxx','indexSoxxMove','indexSoxxChange']];
