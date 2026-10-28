@@ -15,11 +15,12 @@
     <aside class="sidebar">
       <a class="brand" href="#main" aria-label="市場掃描首頁">
         <span class="brand-symbol"><i></i><i></i><i></i></span>
-        <span class="brand-copy"><strong>MARKET DESK</strong><small>台股市場掃描</small></span>
+        <span class="brand-copy"><strong>MARKET DESK</strong><small>市場掃描</small></span>
       </a>
       <div class="sidebar-section-label">市場範圍 <span>MARKETS</span></div>
       <nav class="market-nav" aria-label="選擇市場">
-        <button class="market-link active" data-market="all" type="button"><span class="nav-glyph all-glyph">▤</span><span>上市市場</span><span class="nav-count">1</span></button>
+        <button class="market-link active" data-market="tw" type="button"><span class="nav-glyph all-glyph">TW</span><span>台股市場</span></button>
+        <button class="market-link" data-market="us" type="button"><span class="nav-glyph all-glyph">US</span><span>美股市場</span></button>
       </nav>
       <div class="sidebar-divider"></div>
       <div class="sidebar-section-label">報表設定 <span>REPORT</span></div>
@@ -62,7 +63,7 @@
           <article class="summary-card"><div class="summary-top"><span>漲幅領先</span><span class="summary-symbol symbol-coral">↗</span></div><div class="summary-stock" id="summaryMoverName">等待行情</div><div class="summary-foot"><span id="summaryMoverCode">漲跌幅最高</span><strong id="summaryMoverValue">—</strong></div></article>
         </section>
 
-        <section class="ranking-section">
+        <section class="ranking-section" id="tw-market">
           <div class="section-title-row"><div><p class="overline"><span></span> MARKET LEADERS</p><h2>市場排行</h2></div><div class="scope-caption"><span class="scope-dot"></span><span id="scopeCaption">上市市場</span></div></div>
           <div class="rank-grid">
             <article class="rank-card">
