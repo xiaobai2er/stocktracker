@@ -72,19 +72,21 @@
               <div class="card-foot"><span><span id="volumeFootnote">成交量：張（股數÷1,000）・價格/漲跌幅：Yahoo</span><span class="basis-subnote" id="priceBasisLabel">Yahoo Finance 延遲行情</span><span class="basis-subnote" id="marketQuoteNote">TWSE Yahoo 報價約延遲 20 分鐘；Yahoo 缺漏時回退官方日價。</span><span class="basis-subnote" id="quoteUpdateTime">Yahoo 約延遲 20 分鐘</span></span><span id="volumeCount">—</span></div>
             </article>
             <article class="rank-card market-insight-card">
-              <div class="rank-card-head"><div class="rank-title-group"><span class="rank-icon movers-icon">AI</span><div><h3>盤中熱門股類型</h3><p>2026/10/28 盤中市場觀察（凱基投顧）</p></div></div><span class="unit-chip">題材輪動</span></div>
-              <div class="market-insight-content">
+              <div class="rank-card-head"><div class="rank-title-group"><span class="rank-icon movers-icon">AI</span><div><h3>盤中熱門股</h3><p>市場觀察與估算流出排行</p></div></div><div class="insight-tabs" role="tablist" aria-label="盤中熱門股檢視方式"><button id="themesTab" class="insight-tab active" type="button" role="tab" aria-selected="true" aria-controls="themesPanel">熱門股類型</button><button id="outflowTab" class="insight-tab" type="button" role="tab" aria-selected="false" aria-controls="outflowPanel">個股資金流出</button></div></div>
+              <div class="market-insight-content" id="themesPanel" role="tabpanel" aria-labelledby="themesTab">
                 <div class="market-theme"><strong>晶片設計、IP 與半導體測試</strong><p>設計 IP、客製晶片、ASIC、封測材料與設備。例如晶心科、智原、精測。</p></div>
                 <div class="market-theme"><strong>AI 伺服器電子零組件</strong><p>PCB 設備、銅箔基板、MLCC、電源管理 IC、散熱與液冷。</p></div>
                 <div class="market-theme"><strong>光通訊與系統連接</strong><p>砷化鎵、光通訊、光學鏡頭及高速傳輸。例如穩懋、玉晶光。</p></div>
                 <div class="market-theme"><strong>半導體設備與關鍵材料</strong><p>矽晶圓、封測材料、面板設備等族群也會輪流走強。</p></div>
+                <p class="market-insight-footnote">當日盤面資金偏向 AI 供應鏈，熱門族群每日輪動；盤中觀察。</p>
+              </div>
+              <div class="market-insight-content flow-out-panel" id="outflowPanel" role="tabpanel" aria-labelledby="outflowTab" hidden>
                 <section class="flow-out-block" aria-label="盤中個股資金流出排行">
                   <div class="flow-out-heading"><strong>個股資金流出前五</strong><span id="flowOutStatus">正在讀取估算資料…</span></div>
                   <div id="flowOutRows" class="flow-out-rows"><p class="flow-out-empty">載入中…</p></div>
                   <p class="flow-out-note">盤中估算，非主力實際買賣；資料來源 <a href="https://stonk.ifan.tw/" target="_blank" rel="noreferrer">STONK / IFAN</a></p>
                 </section>
               </div>
-              <div class="card-foot"><span>當日盤面資金偏向 AI 供應鏈，熱門族群每日輪動；此為 2026/10/28 盤中觀察。</span><span>4 類</span></div>
             </article>
           </div>
         </section>
