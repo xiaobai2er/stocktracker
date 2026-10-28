@@ -111,13 +111,18 @@ body{background:#090711;color:#f6f1ff}
 td{color:#ddd5ed}
 
 .us-tech-section{margin-top:24px}
+.us-tech-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.us-tech-heading h2{margin:0}
+.us-tech-refresh{border:1px solid #49385f;border-radius:7px;background:#211738;color:#f6f1ff;padding:6px 11px;font:600 14px 'Noto Sans TC',sans-serif;cursor:pointer;transition:background .15s,border-color .15s}
+.us-tech-refresh:hover:not(:disabled){background:#30204b;border-color:#8b5cf6}
+.us-tech-refresh:disabled{opacity:.72;cursor:wait}
 .us-tech-section .rank-card{width:100%}
 .us-tech-section .table-wrap{overflow-x:auto}
 .us-tech-section .table-wrap table{min-width:820px}
 .us-tech-section .card-foot{align-items:flex-start}
 #usTechRows .stock-name{display:block}
 #usTechRows .price-source{font-size:12px}
-@media(max-width:650px){.us-tech-section .table-wrap table{min-width:820px}.us-tech-section .card-foot{align-items:flex-start}}
+@media(max-width:650px){.us-tech-heading{gap:8px}.us-tech-refresh{font-size:12px;padding:5px 8px}.us-tech-section .table-wrap table{min-width:820px}.us-tech-section .card-foot{align-items:flex-start}}
 
 .index-grid{margin:10px 0 6px}.index-updated{margin:0 2px 18px;color:#9aa69f;font:10px 'Noto Sans TC',sans-serif}
 
