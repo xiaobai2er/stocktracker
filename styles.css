@@ -140,3 +140,6 @@ td{color:#e6e0ef}
 @media(max-width:390px){.summary-overview .summary-card:first-child{grid-column:auto}}
 .summary-foot .pct{font-size:14px;font-weight:600;line-height:1.3}
 @media(max-width:650px){.summary-foot .pct{font-size:12px}}
+thead{background:#211738}
+th{color:#f0eaff;border-color:#49385f}
+td{border-color:#342748}
