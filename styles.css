@@ -143,3 +143,11 @@ td{color:#e6e0ef}
 thead{background:#211738}
 th{color:#f0eaff;border-color:#49385f}
 td{border-color:#342748}
+/* Restore bright foreground colors for values that retain light-theme selectors. */
+.rank-num,.stock-code,.volume-value{color:#d0c7df}
+.rank-num.top-three{color:#2ee9ff}
+.stock-name{color:#f0eaff}
+.stock-market-tag{background:#302443;color:#f0eaff}
+.scope-caption{background:#211738;border-color:#49385f;color:#ddd5ed}
+.nav-count,.sidebar-section-label span{color:#c2b8d4}
+.flat{color:#c2b8d4}
