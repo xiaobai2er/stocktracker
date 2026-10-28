@@ -151,3 +151,12 @@ td{border-color:#342748}
 .scope-caption{background:#211738;border-color:#49385f;color:#ddd5ed}
 .nav-count,.sidebar-section-label span{color:#c2b8d4}
 .flat{color:#c2b8d4}
+/* High-specificity palette rules for any lingering light surfaces. */
+table thead th{background-color:#211738!important;color:#f6f1ff!important;border-color:#49385f!important}
+.session-tab.selected .session-icon{background:#302443;color:#2ee9ff}
+.session-tab:hover{background:#211738}
+.scope-caption{background-color:#211738!important;color:#ddd5ed!important}
+.data-status.error{background-color:#211126!important;color:#f6f1ff}
+.data-status.error .status-copy p{color:#ddd5ed}
+.mini-bar{background:#342748}
+.mini-bar i{background:#2ee9ff}
