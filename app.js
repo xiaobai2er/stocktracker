@@ -129,14 +129,30 @@ async function refreshFlowOutflows(){
     renderFlowOutflows();
   }catch(error){
     $('#flowOutStatus').textContent='資料暫不可用';
-    $('#flowOutRows').innerHTML='<p class="flow-out-empty">流出排行目前無法載入</p>';
+    $('#flowOutRows').innerHTML=empty(5);
     console.warn('Intraday outflow estimate unavailable.',error);
   }
 }
 function renderFlowOutflows(){
   const stamp=state.flowOutUpdatedAt?new Date(state.flowOutUpdatedAt*1000).toISOString():null;
-  $('#flowOutStatus').textContent=`${state.flowMarketOpen?'盤中估算':'最近盤中估算'}${stamp?'・'+taipeiTime(stamp):''}`;
-  $('#flowOutRows').innerHTML=state.flowOutRows.length?`<div class="flow-out-columns"><span></span><span>股票・行情價格／漲跌幅</span><span>流出估算</span></div>${state.flowOutRows.map((row,index)=>`<div class="flow-out-row"><span class="flow-out-rank">${String(index+1).padStart(2,'0')}</span><span class="flow-out-name"><b>${escapeHtml(row.symbol)} ${escapeHtml(row.name)}</b><small>${escapeHtml(row.sector||'')}</small><small class="flow-out-market-data">行情 ${num(row.price)!==null?new Intl.NumberFormat('zh-TW',{minimumFractionDigits:2,maximumFractionDigits:2}).format(num(row.price)):'—'} ・ 漲跌 ${pct(num(row.change_pct))}</small></span><strong>−${(Math.abs(num(row.flow))/1e8).toFixed(1)} 億</strong></div>`).join('')}`:'<p class="flow-out-empty">目前沒有盤中流出資料</p>';
+  $('#flowOutStatus').textContent=(state.flowMarketOpen?'盤中估算':'最近盤中估算')+(stamp?'・'+taipeiTime(stamp):'');
+  const tbody=$('#flowOutRows');
+  tbody.innerHTML='';
+  if(!state.flowOutRows.length){tbody.innerHTML=empty(5);return;}
+  state.flowOutRows.forEach((row,index)=>{
+    const priceValue=num(row.price);
+    const priceText=priceValue!==null?new Intl.NumberFormat('zh-TW',{minimumFractionDigits:2,maximumFractionDigits:2}).format(priceValue):'—';
+    const cells=[
+      '<span class="rank-num '+(index<3?'top-three':'')+'">'+String(index+1).padStart(2,'0')+'</span>',
+      '<span class="stock-code">'+escapeHtml(row.symbol)+'</span><span class="stock-name">'+escapeHtml(row.name)+'</span><span class="stock-market-tag">'+escapeHtml(row.sector||'上市')+'</span>',
+      '<span class="price-value">'+priceText+'</span><small class="price-source flow-estimate-source">盤中估算</small>',
+      pct(num(row.change_pct)),
+      '<span class="pct down">−'+(Math.abs(num(row.flow))/1e8).toFixed(1)+' 億</span>'
+    ];
+    const tr=document.createElement('tr');
+    cells.forEach((html,index)=>{const td=document.createElement('td');if(index>=2)td.className='numeric';td.innerHTML=html;tr.appendChild(td);});
+    tbody.appendChild(tr);
+  });
 }
 function renderMarketIndices(quotes){
   const items=[['^IXIC','indexNasdaq','indexNasdaqMove','indexNasdaqChange'],['^GSPC','indexSp500','indexSp500Move','indexSp500Change'],['SOXX','indexSoxx','indexSoxxMove','indexSoxxChange']];
