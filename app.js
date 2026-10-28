@@ -66,7 +66,7 @@ function applyYahooQuotes(quotes){
 async function refreshWorkerQuotes(){
   const base=String(window.STOCKTRACKER_YAHOO_WORKER_URL||'').trim();
   if(!base||!state.fetchedAt||workerQuotePromise)return workerQuotePromise;
-  const symbols=[...new Set([...Object.values(state.sourceRows).flat().map(quoteSymbol),'^IXIC','^GSPC','SOXX'])];
+  const symbols=[...new Set([...Object.values(state.sourceRows).flat().map(quoteSymbol),'^IXIC','^GSPC','SOXX','0050.TW'])];
   if(!symbols.length)return;
   workerQuotePromise=(async()=>{
     const fresh={};
@@ -78,6 +78,7 @@ async function refreshWorkerQuotes(){
     }
     if(Object.keys(fresh).length){
       renderMarketIndices(fresh);
+      renderTaiwanETF(fresh);
       applyYahooQuotes({...state.yahooQuotes,...fresh});render();
     }
   })().catch(error=>{
@@ -154,6 +155,16 @@ function renderFlowOutflows(){
     tbody.appendChild(tr);
   });
 }
+function renderTaiwanETF(quotes){
+  const q=quotes['0050.TW'];
+  const priceValue=num(q?.price), change=num(q?.change), pctValue=num(q?.changePercent);
+  document.getElementById('tw0050Price').textContent=priceValue!==null?new Intl.NumberFormat('zh-TW',{minimumFractionDigits:2,maximumFractionDigits:2}).format(priceValue):'暫無報價';
+  const move=document.getElementById('tw0050Move'), percent=document.getElementById('tw0050Change');
+  move.textContent=change!==null?`${change>0?'+':''}${new Intl.NumberFormat('zh-TW',{maximumFractionDigits:2}).format(change)}`:'—';
+  move.className=`pct ${change>0?'up':change<0?'down':'flat'}`;
+  percent.textContent=pctValue!==null?`${pctValue>0?'+':''}${pctValue.toFixed(2)}%`:'—';
+  percent.className=`pct ${pctValue>0?'up':pctValue<0?'down':'flat'}`;
+}
 function renderMarketIndices(quotes){
   const items=[['^IXIC','indexNasdaq','indexNasdaqMove','indexNasdaqChange'],['^GSPC','indexSp500','indexSp500Move','indexSp500Change'],['SOXX','indexSoxx','indexSoxxMove','indexSoxxChange']];
   for(const [symbol,valueId,moveId,changeId] of items){
@@ -196,6 +207,7 @@ function loadData({manual=false}={}){
     state.sourceRows={listed:twseRows,otc:[],emerging:[]};
     applyYahooQuotes(snapshot.yahooQuotes&&typeof snapshot.yahooQuotes==='object'?snapshot.yahooQuotes:{});
     renderMarketIndices(snapshot.yahooQuotes||{});
+    renderTaiwanETF(snapshot.yahooQuotes||{});
     state.dates={listed:[...new Set(twseRows.map(x=>dateKey(x.date)).filter(Boolean))].sort(),otc:[],emerging:[]};
     state.commonDate=state.dates.listed.length>0;
     state.stamp=state.dates.listed.at(-1)||'';
