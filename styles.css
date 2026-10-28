@@ -121,3 +121,5 @@ td{color:#ddd5ed}
 
 .index-grid{margin:10px 0 6px}.index-updated{margin:0 2px 18px;color:#9aa69f;font:10px 'Noto Sans TC',sans-serif}
 
+.index-grid .summary-value{font-size:32px;line-height:1.2;letter-spacing:-.035em;font-variant-numeric:tabular-nums}.index-grid .summary-foot{align-items:center;gap:12px;flex-wrap:wrap}.index-grid .summary-foot>span,.index-grid .summary-foot strong{font-size:15px;font-variant-numeric:tabular-nums}.index-grid .summary-foot strong{white-space:nowrap}.index-grid .summary-top{font-size:12px}.index-updated{font-size:11px}
+@media(max-width:650px){.index-grid .summary-value{font-size:25px}.index-grid .summary-foot{gap:7px}.index-grid .summary-foot>span,.index-grid .summary-foot strong{font-size:11px}.index-grid .summary-top{font-size:9px}.index-grid .summary-card{padding:10px 8px}}
